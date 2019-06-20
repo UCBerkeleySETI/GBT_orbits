@@ -1,0 +1,58 @@
+#! /bin/sh
+#
+#   $Header: playSound.tclsh  Revision:1.0  Friday, March 01, 2019 14:14:21  rmaddale $
+#
+#   $Copyright © 2019 Associated Universities, Inc. Washington, D.C. ALL RIGHTS RESERVED. $
+#
+# The next line restarts using wish \
+exec tclsh "$0" "$@"
+
+proc putsRslts { args } {
+
+    global sid argvValues
+
+    if {[gets $sid response] >= 0} {        
+        puts -nonewline $response
+        catch {close $sid}
+
+    } else {
+        puts stderr "No response from server for $argvValues(command)"
+        catch {close $sid} 
+    }
+    exit
+}
+
+lappend auto_path /users/rmaddale/Tcl/library
+set env(CLEODIR) /users/rmaddale/Tcl
+
+set argv [join $argv]
+
+checkArguments2 {string {host command} integer {port timeout}} {-port 9015 -host localhost -timeout 10 \
+        -command {messageBox -message {Hello World} -type okcancel -icon question -title {A Test}}}
+
+set argvValues(command) [string trim $argvValues(command)]
+if {$argvValues(timeout) <= 0} {
+    set argvValues(timeout) 3600
+}
+
+if {$argvValues(port) <= 0 || $argvValues(command) == ""} {
+    puts stderr "Cannot execute $argvValues(command)"
+    exit 1
+}
+
+if [catch {socket $argvValues(host) $argvValues(port)} sid] {
+    puts stderr "No response from server"
+    exit 1
+}
+
+fconfigure $sid -buffering line
+fileevent $sid readable putsRslts
+
+after [expr {1000*$argvValues(timeout)}] {
+    catch {close $sid}
+    puts stderr "No response from server in $argvValues(timeout) seconds for $argvValues(command)"
+    exit 1
+}
+
+after 100 "puts $sid [list $argvValues(command)]"
+vwait foreever

@@ -1,0 +1,98 @@
+import os
+import subprocess
+
+# Hack as a way to determine if we're on or ofline
+if GetLST() is None :
+    print "You are working OFFLINE"
+    online=False
+else:
+    print "Warning:  You are working ONLINE"
+    online=True
+
+# The true home of the external routines needs to be esatblished
+os.chdir( "/users/rmaddale/BTL/CurrentVersion")
+
+# Ask the operator via a TCL: dialog box
+p = subprocess.Popen(["askQuestion.tclsh"],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+(rslts, errP) = p.communicate()
+if errP != "":
+    print "********************"
+    print "**** Error in determining receiver"
+    print "****", errP,  "********************"
+else:
+    aa = rslts.split()
+    doCalib=aa[0]
+    doPulsar=aa[1]
+    doPnt=aa[2]
+    doOOF=aa[3]
+    rcvr=aa[4]
+    effLimit=aa[5]
+    configFile=aa[6]
+    primaryCat=aa[7]
+    secondaryCat=aa[8]
+    pulsarCat=aa[9]
+    calibCat=aa[10]
+    cadenceAutoOOF=aa[11]
+    cadencePeakFocus=aa[12]
+    doPeakFocus=aa[13]
+
+    Catalog(primaryCat)
+    Catalog(secondaryCat)
+    Catalog(pulsarCat)
+    Catalog(calibCat)
+
+    print "Configuring using:", configFile
+        # Just to be safe, don't do anything real
+        # Configure(configFile)
+        # execfile(configFile)
+
+    # Find name of calibrator with the minimum move time
+    if doCalib == "1":
+        p = subprocess.Popen(["whichSources.tclsh", str(GetCurrentLocation("Encoder")),calibCat],
+            stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        (calSrc, errP) = p.communicate()
+        print "Selected calibrator:", calSrc
+
+        if doPeakFocus == "1":
+            AutoPeak(location=calSrc)
+        if doPeakFocus == "2":
+            AutoPeakFocus(location=calSrc)
+
+        print "Reconfiguring using:", configFile
+        # Configure(configFile)
+        # execfile(configFile)
+        Balance()
+        Track(calSrc,None,120)
+        #  Need to wink the diode here
+
+    # Same for a pulsar
+    if doPulsar == "1":
+        p = subprocess.Popen(["whichSources.tclsh", str(GetCurrentLocation("Encoder")),pulsarCat,],
+            stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        (psrSrc, errP) = p.communicate()
+        print "Selected pulsar:", psrSrc
+
+        # Track(psrSrc,None,120)
+
+    # Same for primary source
+    p = subprocess.Popen(["whichSources.tclsh", str(GetCurrentLocation("Encoder")),primeCat,rcvr],
+        stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    (primeSrc, errP) = p.communicate()
+    print "Selected primary:", primeSrc
+
+    Track(primeSrc,None,120)
+
+   # Same for three secondary sources
+    p = subprocess.Popen(["whichSources.tclsh", str(GetCurrentLocation("Encoder")),secondCat,rcvr,"3"],
+        stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    (rslts, errP) = p.communicate()
+    secondSrcs = rslts.split()
+    print "Selected secondaries:", secondSrcs[0], secondSrcs[1], secondSrcs[2]
+
+    Track(secondSrcs[0],None,120)
+    Track(primeSrc,None,120)
+    Track(secondSrcs[1],None,120)
+    Track(primeSrc,None,120)
+    Track(secondSrcs[2],None,120)
+    Track(primeSrc,None,120)
+ 

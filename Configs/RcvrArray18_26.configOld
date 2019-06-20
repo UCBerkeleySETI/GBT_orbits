@@ -1,0 +1,107 @@
+# KFPA-band config script cleaned up 4/19/2019
+# This is the standard KFPA-band config.
+# Three bank observing with 64 nodes. Center Frequency is 22,000 MHz
+
+
+execfile('/users/rmaddale/BTL/CurrentVersion/btlmgr_utils.py')
+global oreo
+
+rcvr = GetValue("LO1","receiver")
+
+if rcvr != "RcvrArray18_26":
+   print "Current Receiver is NOT KFPA-band"
+   Break(("Current Receiver is " +rcvr+", NOT KFPA-band, aka RcvrArray18_26"), None)
+
+
+ResetConfig()
+
+DCRConfig="""
+receiver = 'Rcvr18_10'
+restfreq = 22250.0
+deltafreq=0
+nwin=1
+obstype = 'Continuum'
+backend = 'DCR'
+bandwidth = 20
+tint = 0.5
+swper=0.5
+swmode = 'tp'
+vframe = 'topo'
+vdef='Radio'
+broadband=1
+"""
+
+# Main configuration
+#Note that water massers are at 22,235 MHz
+
+config_g="""
+receiver = 'RcvrArray18_26'
+restfreq = [
+   {'bank':'A','restfreq':26187.500000,'beam':1},
+   {'bank':'B','restfreq':25062.500000,'beam':1},
+   {'bank':'C','restfreq':23937.500000,'beam':1},
+   {'bank':'D','restfreq':22812.500000,'beam':1},
+   {'bank':'E','restfreq':21687.500000,'beam':1},
+   {'bank':'F','restfreq':20562.500000,'beam':1},
+   {'bank':'G','restfreq':19437.500000,'beam':1},
+   {'bank':'H','restfreq':18312.500000,'beam':1}
+]
+dopplertrackfreq = 22250.0   #EE: should this be 22250.0 ? 
+obstype = 'Spectroscopy'
+backend = 'VEGAS'
+bandwidth = 1500
+tint  = 1
+swmode = 'tp_nocal'  #EE: or 'tp'?
+noisecal = 'lo'
+swtype = 'none'
+swper = 0.04
+swfreq = 0.0,0.0,0.0,0.0, 0.0,0.0,0.0,0.0
+nwin=8 #EE: should we add nwin=8 ?
+deltafreq = 0,0,0,0, 0,0,0,0
+vlow = 0
+vhigh = 0
+vframe = 'topo'
+vdef = 'Radio'
+nchan = 1024
+broadband=1   #EE should this be 0?
+"""
+
+# Initial configure
+Configure(config_g)
+
+# Do Balance()
+if 'doBalance' in oreo and oreo['doBalance']:
+    Balance()
+
+# Set BTL mode
+set_btl_mode('CODD_MODE_512_64') 
+
+# Use DCR as switching signal master
+SetValues("SwitchingSignalSelector",{
+    "selCal": "Source_0",
+    "selSigRef": "Source_0",
+    "selAdvSigRef": "Source_0",
+    "selBlanking": "Source_0"
+#EE do we need     "state" : "prepare"  here? 
+})
+SetValues("ScanCoordinator", {
+    "subsystemSelect,DCR":"1",
+    "switching_signals_master": "DCR"
+#EE do we need     "state" : "prepare"  here? 
+})
+
+
+#Turn off Cal
+#rcvr = GetValue("LO1","receiver")
+#if rcvr in ["Rcvr12_18","Rcvr26_40","Rcvr40_52","Rcvr68_92","RcvrArray75_116","Rcvr_MBA1_5"]:
+    #print "I'm sorry Dave, I'm afraid I can't do that."
+    #Break("Advanced control of receiver noise diodes is not supported for %s"%rcvr)
+
+#else:
+    #SetValues(rcvr, {
+        #"xlExtToMCBCtrlSel":"ctlMcb",
+        #"yrExtToMCBCtrlSel":"ctlMcb",
+        #"xlCPUNoiseSwCtrl":"swOff",
+        #"yrCPUNoiseSwCtrl":"swOff"
+##EE do we need     "state" : "prepare"  here? 
+    #})

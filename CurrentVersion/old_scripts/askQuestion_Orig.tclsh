@@ -1,0 +1,122 @@
+#! /bin/sh
+#
+# $Copyright © 2019 Associated Universities, Inc. Washington, D.C. ALL RIGHTS RESERVED. $
+#
+# $Header: askQuestion_Orig.tclsh  Revision:1.0  Friday, March 01, 2019 14:20:57  rmaddale $
+#
+# The next line restarts using wish \
+exec wish "$0" "$@"
+
+set env(CLEODIR) /users/rmaddale/Tcl
+
+source BTL_Library.tcl
+
+#------------------------------
+# Generates the output string expected by ASTRID.  Uses the global info to get to catalog, 
+# cadence, etc information
+proc Exit { } {
+
+    global cal pul pnt oof priorityRcvr info duration
+
+    set output "doCalib $cal doPulsar $pul doPnt $pnt doOOF $oof rcvr $priorityRcvr "
+    foreach id [list effLimit configFile primaryCat secondaryCat pulsarCat calibCat cadenceAutoOOF cadencePeakFocus doFocus distancePeak freq] {
+        append output "$id $info($priorityRcvr,$id) "
+    }
+    append output "sessionDur $duration"
+
+    puts -nonewline $output
+    exit
+}
+
+#------------------------------
+# Changes the content of the message box whenever the user selects
+# a receiver.
+proc changeRcvr { rcvr } {
+
+    global mssg info
+
+    .msg configure -textvariable mssg($rcvr)
+
+}
+
+wm protocol . WM_DELETE_WINDOW {Exit}
+lappend auto_path /users/rmaddale/Tcl/library
+
+# Default values for the GUI as to whether the user will specify an observation of a calibrator, an observation of a pulsar, 
+# an 'AutoPeak(Focus)', or an "AutoOOF" is to be performed at the start of the session.
+set cal 1
+set pul 1
+set pnt 1
+set oof 0
+
+set duration 3.0
+
+# GUI elements that allow one to alter the above default values.
+pack [frame .opt -borderwidth 2 -relief groove] -side top -anchor w
+pack [label .opt.lbl -text "Options:" -font "Helvetica 16"] -side left -anchor w
+pack [checkbutton .opt.calibrator -text "Do Calibrator" -variable cal -anchor w -font "Helvetica 16"] -side left -anchor w
+pack [checkbutton .opt.pulsar -text "Do Pulsar" -variable pul -anchor w -font "Helvetica 16"] -side left -anchor w
+pack [checkbutton .opt.pointing -text "Do Pointing" -variable pnt -anchor w -font "Helvetica 16"] -side left -anchor w
+pack [checkbutton .opt.oof -text "Do AutoOOF" -variable oof -anchor w -font "Helvetica 16"] -side left -anchor w
+
+.opt.oof configure -state disabled
+
+# Find the list of receivers to populate the radio buttons
+if [catch {getHighPriority ../PriorityList.dat} rslts] {
+    puts stderr $rslts
+    exit -1
+}
+
+# set rslts [list Rcvr8_10 Rcvr4_6 RcvrPF1_450 Rcvr26_40]
+
+pack [frame .fraRcvr] -fill x -expand 1 -side top -pady 5
+pack [label .fraRcvr.lbl -text "Receivers:" -font "Helvetica 16"] -side left -anchor w
+foreach rcvr [lrange $rslts 0 3] {
+
+    # Create the contents of the message window, index by the name of the receiver.
+    if $info($rcvr,doFocus) {
+        set focusStr Focus
+    } else {
+        set focusStr ""
+    }
+    if {$info($rcvr,cadencePeakFocus) > 0} {
+        set mssg($rcvr) "AutoPeak$focusStr Cadence: $info($rcvr,cadencePeakFocus) hrs\n"
+    } else {
+        set mssg($rcvr) "AutoPeak$focusStr only once per session\n"
+    }
+    append mssg($rcvr) "Maximum angular separation before repeating AutoPeak$focusStr: $info($rcvr,distancePeak) Degrees\n"
+    if {$info($rcvr,cadenceAutoOOF) > 0} {
+        append mssg($rcvr) "AutoOOF Cadence: $info($rcvr,cadenceAutoOOF) hrs\n"
+    } else {
+        append msg(rcvr) \n
+    }
+    append mssg($rcvr) "Limit on loss of efficiency: $info($rcvr,effLimit)\n"
+    append mssg($rcvr) "Primary Catalog: $info($rcvr,primaryCat)\n"
+    append mssg($rcvr) "Secondary Catalog: $info($rcvr,secondaryCat)\n"
+    append mssg($rcvr) "Pulsar Catalog: $info($rcvr,pulsarCat)\n"
+    append mssg($rcvr) "Calibrator Catalog: $info($rcvr,calibCat)\n"
+    append mssg($rcvr) "Configuration File: $info($rcvr,configFile)\n"
+    append mssg($rcvr) "Current directory: [pwd]"
+
+    # GUI elemnts for selecting a receiver other than the 'best'
+    pack [radiobutton .fraRcvr.radio$rcvr -text $rcvr -variable priorityRcvr -value $rcvr \
+            -anchor c -font "Helvetica 16" -indicatoron 0 -width 16 -selectcolor green \
+            -command "changeRcvr $rcvr"] -side left  -anchor w 
+}
+
+# Start off with selecting the default, highest priority receiver.
+set priorityRcvr [lindex $rslts 0]
+
+# For user to enter the expected session duration
+pack [frame .fraDur -borderwidth 2 -relief groove] -fill x -side top
+pack [label .fraDur.lbl -text "Session Duration (hrs):" -font "Helvetica 16"] -side left  -anchor w
+pack [entry .fraDur.entDur -textvariable duration -width 5 -font "Helvetica 16" -justify c] -side left  -anchor w
+
+pack [message .msg -textvariable mssg($priorityRcvr) -width 550 -aspect 100 -anchor w] -fill x -expand 1 -side top
+
+pack [button .go -command Exit -text Go -bg green -font "Helvetica 16" -borderwidth 3 -relief raised] -fill x -expand 1 -side top
+pack [button .cancel -command {puts stderr "Cancelled"; exit 1} -text Cancel -bg red -font "Helvetica 16" -borderwidth 3 -relief raised] -fill x -expand 1 -side top
+
+wm resizable . 0 0
+
+raise .

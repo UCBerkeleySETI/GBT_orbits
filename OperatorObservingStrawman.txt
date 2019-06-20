@@ -1,0 +1,143 @@
+Here's a straw-man outline of what I'm envisioning will be the parts of 
+an ASTRID script for operator-run observing.  Think of this as the 
+starting point for our discussions during my stay in Berkeley this week.
+
+While the steps below might seem daunting, it's probably no more 
+complicated as the equivalent, behind-the-scenes steps we use for 
+RadioAstron observing.  It also seems to encode the steps the humans are 
+currently executing.  I'm assuming using the BTL manager way of setting 
+up the hardware.  We'd have to break the below steps into 2 scripts if 
+using the non-manager method of setting up the hardware.
+
+Ron
+
+====================
+
+Required disk files:
+     Configs for each rcvr in a file that will be exec'ed
+     Primary source catalog files for each rcvr
+     Secondary source catalog files for each rcvr
+     File containing prioritized list of rcvrs
+     Calib catalog (probably the same file for < 50 GHZ)
+     Pulsar catalog for each rcvr?
+
+Operator initiates a single script with the following steps.  I'm 
+currently thinking that in each step ASTRID calls an external program 
+that makes decisions that are returned to ASTRID via standard output.  
+ASTRID executes what the external scripts tells it to do.
+
+1. Which Rcvr?
+     Uses:
+         Weather limits
+         Rcvr Priority table
+         Rcvr Availability
+
+     Algorithm:
+         Picks the highest priority rcvr that is available with usable weather
+
+     Returns:
+         Name of ASTRID Config
+         Name of Primary source Catalog
+         Name of Secondary source Catalog
+         Name of Calib Catalog (probably the same file for < 50 GHZ)
+         Name of Pulsar Catalog, or blank if no pulsar available for the 
+		high-freq rcvr
+         Name of log file
+         Flag as to whether to AutoPeak, AutoPeakFocus, or skip
+
+     ASTRID:
+         Executes config that is stored in the external file containing configs 
+		for all receivers
+	 Rotates turret?  Currently, Breaks so the operator can rotate turret / deploy /retract the PF boom
+
+     Limitations:
+     	Won't know which PF receiver is in place
+	Won't know if a Gregorian receiver has a hardware problem.
+	Need to add wind limits to the algorithm
+
+2. Which Calib?
+
+     Question: Always observe as 1st src in session?
+
+     Uses:
+         Rcvr name
+         Calib catalog name for the rcvr
+         Retrieved telescope Az/El
+         Log file name, to determine if Calib has been done
+
+     Algorithm
+         Whether a Calib is needed.  If so,
+             Pick minimum move time
+             Whether a Peak is needed
+
+     Returns
+         Flag to skip calib if the log file indicates a successful CALIB
+         Flag to skip AutoPeakFocus if the log file indicates a recent, nearby PEAK.
+         Source name
+
+     ASTRID
+     If CALIB is needed:
+         Slew, Balance,
+         If Peak needed
+             AutoPeak(Focus) on calibrator
+             Logs Az,El,UT of last Peak
+         On-Off on source
+         Logs that a calib was observed successfully
+
+3. Which Pulsar?
+
+     Question: Always observe as 2nd src in session?
+
+     Uses:
+         Pulsar catalog for the rcvr
+         Retrieved telescope Az/El
+         Log file name, to determine Az,El,UT of last Peak
+         Log file name, to determine if Pulsar obs has been done
+
+     Algorithm
+         Whether a Pulsar obs is needed
+             Pick minimum move time
+             Whether a Peak is needed
+
+     Returns
+         Flag to skip pulsar if the log file indicates a successful 
+Pulsar obs
+         Flag to skip AutoPeakFocus if the log file indicates a recent, 
+nearby PEAK.
+         Source name
+
+     ASTRID
+     If Pulsar needed
+         Slew, balance
+         If Peak needed
+             AutoPeak on nearby source
+             Logs Az,El,UT of last Peak
+             Track on source
+             Logs that a pulsar was observed successfully
+
+4. Loops until operator terminates
+
+     Uses:
+         Primary catalog for the rcvr
+         Secondary catalog for the rcvr
+         Retrieved telescope Az/El
+         Log file name, to determine Az,El,UT of last Peak
+         Log file name, to   determine observed sources
+
+     Algorithm
+         Pick minimum move time for not-yet-observed primary source
+         Pick minimum move time for 3(?) not-yet-observed secondary sources
+         Whether a Peak/Focus is needed
+
+     Returns
+         Primary source name
+         Three(?) secondary source names
+         Flag as to whether to AutoPeak
+
+     ASTRID
+     If Peak needed:
+         AutoPeak on nearby source
+         Logs Az,El,UT of last Peak
+     Tracks source(s)
+     Logs that sources have been observed
+

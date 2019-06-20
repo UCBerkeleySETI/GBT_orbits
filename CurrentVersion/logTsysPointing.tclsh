@@ -1,0 +1,55 @@
+#! /bin/sh
+#
+#   $Header: logTsysPointing.tclsh  Revision:1.0  Wednesday, February 20, 2019 13:05:03  rmaddale $
+#
+#   $Copyright © 2019 Associated Universities, Inc. Washington, D.C. ALL RIGHTS RESERVED. $
+#
+# The next line restarts using wish \
+exec tclsh "$0" "$@"
+
+lappend auto_path /users/rmaddale/Tcl/library
+set env(CLEODIR) /users/rmaddale/Tcl
+cd /home/groups/btl/OREO/CurrentVersion
+
+#array set milk [list \
+#        telPos "(180:00:00, 80:00:00)" \
+#        freq 8.5 \
+#        tsysTolerance 15 \
+#        tsysNSamps 4 \
+#        tsysLogFile stdout \
+#        rcvr Rcvr8_10 \
+#        ]
+
+parseArgv2Milk
+
+foreach {AzEnc ElEnc} [decodeTelePos $milk(telPos)] { break }
+
+set logEntry "[clock format [clock seconds] -format {%Y%m%dT%H%M%SZ} -gmt 1]\t[format %-20s $milk(rcvr)]\t[format %9.5f $AzEnc]\t[format %9.5f $ElEnc]"
+
+if [info exists milk(logfile)] {
+    set logfile $milk(logfile)
+} elseif [info exists milk(tsysLogFile)] {
+    set logfile $milk(tsysLogFile)
+} elseif [info exists milk(apfLogFile)] {
+    set logfile $milk(apfLogFile)
+} else {
+    set logfile /home/groups/btl/OREO/logfile.txt
+}
+
+switch $logfile {
+    stdout {
+        puts "Log Entry: [string trim $logEntry]"
+    }
+    default {
+        if {![file exists $logfile]} {
+            set fid [open $logfile w]
+            puts $fid "#  TimeStamp		Receiver                Az		El" 
+        } else {
+            set fid [open $logfile a]
+        }
+        puts $fid [string trim $logEntry]
+        close $fid
+    }
+}
+
+Exit

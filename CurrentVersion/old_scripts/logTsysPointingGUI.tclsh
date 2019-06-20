@@ -1,0 +1,103 @@
+#! /bin/sh
+#
+#   $Header: logTsysPointingGUI.tclsh  Revision:1.0  Friday, March 01, 2019 14:20:57  rmaddale $
+#
+#   $Copyright © 2019 Associated Universities, Inc. Washington, D.C. ALL RIGHTS RESERVED. $
+#
+# The next line restarts using wish \
+exec segeste "$0" "$@"
+
+wm withdraw .; wm geometry . 1x1
+
+lappend auto_path /users/rmaddale/Tcl/library
+set env(CLEODIR) /users/rmaddale/Tcl
+cd /users/rmaddale/BTL/CurrentVersion
+
+#array set milk [list \
+#        telPos "(180:00:00, 80:00:00)" \
+#        freq 8.5 \
+#        tsysTolerance 15 \
+#        tsysNSamps 4 \
+#        tsysLogFile stdout \
+#        ]
+
+parseArgv2Milk
+
+foreach {AzEnc ElEnc} [decodeTelePos $milk(telPos)] { break }
+
+catch {exec /users/rmaddale/Tcl/mainscreens/getForecastValues.tcl -type TotalTsys -elev $ElEnc -freq $milk(freq)} rslts
+set predictedTsys [format %.1f [lindex $rslts end]]
+
+set env(CLEOSIMULATOR) 0
+set env(CLEOUSERNAME) rmaddale
+
+startDevice DCR
+DCR configure -monitor on
+DCR configure -control on
+DCR startData CH1_16
+DCR regParam Channel
+DCR regParam Bank
+DCR regParam source
+
+set n 0
+while {![info exists DCR(Bank)] && $n < 10} {
+    update
+    update idletasks
+    DCR getValue Bank
+    after 200
+    incr n
+}
+
+set ports [list ]
+for {set i 1} {$i <= 16} {incr i} {
+    if $DCR(Channel,$i) {
+        if {$DCR(Bank) == "Bank_A"} {
+            lappend ports $i
+            set tsys($i) 0
+        } else {
+            lappend ports [expr {$i+16}]
+            set tsys([expr {$i+16}]) 0
+        }
+    }
+}
+for {set i 1} {$i <= $milk(tsysNSamps)} {incr i} {
+    foreach p $ports {
+        fincr tsys($p) $DCR(CH1_16,Tsys$p)
+    }
+    after 200
+}
+
+set mssg ""
+set ok 1
+set logEntry " "
+foreach p $ports {
+    set tsys($p) [format %.1f [expr {$tsys($p)/16.}]]
+    append logEntry "\t$tsys($p)"
+    set tsysDiff($p) [format %.2f [expr {100.*abs($tsys($p)/$predictedTsys -1.)}]]
+    if {$tsysDiff($p) > $milk(tsysTolerance)} {
+        set ok 0
+        append mssg "Tsys for port $p ($tsys($p) K) exceeds tolerance ($milk(tsysTolerance) %) from expected ($predictedTsys K) by $tsysDiff($p)%\n"
+    } else {
+        append mssg "$p $tsysDiff($p) $predictedTsys"
+    }
+}
+
+if $ok {
+    puts "TsysOK\n[string trim $mssg]"
+} else {
+    puts stderr "TsysBad\n[string trim $mssg]"
+}
+
+set logEntry "[clock format [clock seconds] -format {%Y%m%dT%H%M%SZ} -gmt 1]\t$DCR(source)\t$milk(rcvr)\t$AzEnc\t$ElEnc\t$ok\t$predictedTsys$logEntry"
+switch $milk(tsysLogFile) {
+    stdout {
+        puts "Log Entry: [string trim $logEntry]"
+    }
+    default {
+        set fid [open $milk(tsysLogFile) a]
+        puts $fid [string trim $logEntry]
+        close $fid
+    }
+}
+
+Exit

@@ -1,0 +1,13 @@
+#! /bin/sh
+#
+# $Copyright$
+#
+# $Header$
+#
+# The next line restarts using wish \
+exec tclsh "$0" "$@"
+
+set fid [open /home/groups/btl/OREO/answers.txt r]
+puts -nonewline [read $fid]
+close $fid
+

@@ -1,0 +1,164 @@
+import os
+import subprocess
+
+#----------------------
+def pntFoc( objName, doFocus, configFileName, doConfig, online, freq ):
+    if doFocus == "T":
+        print "AutoPeakFocus", objName, configFileName, doConfig, online
+        AutoPeakFocus(location=objName,balance=False)
+    else:
+       print "AutoPeak", objName, configFileName, doConfig, online
+       AutoPeak(location=objName,balance=False)
+
+    if online or True:
+        print "Updating Tsys logfile"
+        p = subprocess.Popen(["logTsysPointing.tclsh", str(GetCurrentLocation("Encoder")),freq],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        (rslts, errP) = p.communicate()
+        if errP != "":
+            Break(errP,600)
+
+    if online and doConfig:
+        print "Reconfiguring using:", configFileName
+        Configure(configFileName,Balance=False)
+    else:
+        Slew(objName)
+
+#----------------------
+# Hack as a way to determine if we're on or ofline
+if GetLST() is None :
+    print "You are working OFFLINE"
+    online=False
+else:
+    print "Warning:  You are working ONLINE"
+    online=True
+
+# **** The true home of the external routines needs to be esatblished
+os.chdir( "/users/rmaddale/BTL/CurrentVersion")
+
+#----------------------
+# Ask the operator questions via a TCL dialog box
+#
+p = subprocess.Popen(["askQuestion.tclsh"],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+(rslts, errP) = p.communicate()
+if errP != "":
+    print "**** Error in determining receiver:", errP
+else:
+    aa = rslts.split()
+    doCalib=aa[0]
+    doPulsar=aa[1]
+    doPnt=aa[2]
+    doOOF=aa[3]
+    rcvr=aa[4]
+    effLimit=aa[5]
+    configFile=aa[6]
+    primaryCat=aa[7]
+    secondaryCat=aa[8]
+    pulsarCat=aa[9]
+    calibCat=aa[10]
+    cadenceAutoOOF=aa[11]
+    cadencePeakFocus=aa[12]
+    doPeakFocus=aa[13]
+    distancePeak=aa[14]
+    freq=aa[15]
+    sessionDur=aa[16]
+
+    #-------------------------
+    Catalog(primaryCat)
+    Catalog(secondaryCat)
+    Catalog(pulsarCat)
+    Catalog(calibCat)
+
+    #--------------------------
+    print "Configuring using:", configFile
+    execfile(configFile)
+    if doCalib == "1":
+           Balance()
+
+    #--------------------------
+    # **** Check whether an AutoOOF needs to be done, and, if so, do it and log it.
+
+    #--------------------------
+    # Find name of calibrator with the minimum move time
+    #
+    if doCalib == "1":
+        p = subprocess.Popen(["whichSources.tclsh", str(GetCurrentLocation("Encoder")),calibCat,freq,effLimit],
+            stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        (calSrc, errP) = p.communicate()
+        print "Selected calibrator:", calSrc
+
+        if doPnt == "1":
+            pntFoc(calSrc, doPeakFocus, configFile, True, online, freq )
+            doPnt="0"
+            
+        Configure('''
+	    swmode='tp'
+	    ''')
+
+        OnOff(calSrc,Offset('J2000', 1.0, 0.0, cosv=False), 120, '1')
+        Configure('''
+	    swmode='tp_nocal'
+	    ''')
+
+    #--------------------------
+    # Pulsar
+    #
+    if doPulsar == "1":
+        # **** Check whether a peak needs to be done, and, if so, do it and log it.
+        p = subprocess.Popen(["whichSources.tclsh", str(GetCurrentLocation("Encoder")),pulsarCat,freq,effLimit],
+            stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        (psrSrc, errP) = p.communicate()
+        print "Selected pulsar:", psrSrc
+
+        if doPnt == "1":
+            pntFoc(psrSrc, doPeakFocus, configFile, True, online, freq )
+            doPnt="0"
+        
+        Track(psrSrc,None,120)
+
+    #--------------------------
+    # ****  Place below in a while loop that ends when either sessionDur or autoOOF cadence is met
+    #
+    # Primary and secondary sources
+    #
+    p = subprocess.Popen(["whichSources.tclsh", str(GetCurrentLocation("Encoder")),primaryCat,freq,effLimit,"1",rcvr],
+            stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    (primeSrc, errP) = p.communicate()
+    if errP != "":
+        Break(errP)
+    print "Selected primary:", primeSrc
+
+    needToPoint = "0"
+    if online: 
+        p = subprocess.Popen(["isPointingNeeded.tclsh", str(GetCurrentLocation("Encoder")), cadencePeakFocus, distancePeak],
+             stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        (needToPoint, errP) = p.communicate()
+
+    if doPnt == "1" or needToPoint == "1":
+        pntFoc(primeSrc, doPeakFocus, configFile, True, online, freq )
+        doPnt="0"
+
+    Slew(primeSrc)
+
+    # Same for three secondary sources
+    p = subprocess.Popen(["whichSources.tclsh", str(GetCurrentLocation("Encoder")),secondaryCat,freq,effLimit,"3",rcvr],
+             stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    (rslts, errP) = p.communicate()
+    if errP != "":
+        Break(errP)
+    secondSrcs = rslts.split()
+    print "Selected secondaries:", secondSrcs[0], secondSrcs[1], secondSrcs[2]
+
+    Track(primeSrc,None,120)
+    Track(secondSrcs[0],None,120)
+    Track(primeSrc,None,120)
+    Track(secondSrcs[1],None,120)
+    Track(primeSrc,None,120)
+    Track(secondSrcs[2],None,120)
+
+    if online: 
+        print "Updating catalogs"
+        p = subprocess.Popen(["updateCatalog.tclsh",rcvr, primaryCat, primeSrc, secondaryCat, secondSrcs[0],secondSrcs[1],secondSrcs[2]],
+             stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        (rslts, errP) = p.communicate()
+        print rslts
+        print errP

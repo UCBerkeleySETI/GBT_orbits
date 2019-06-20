@@ -1,0 +1,93 @@
+#! /bin/sh
+#
+# $Copyright$
+#
+# $Header$
+#
+# The next line restarts using wish \
+exec tclsh "$0" "$@"
+
+set env(CLEODIR) /users/rmaddale/Tcl
+lappend auto_path /users/rmaddale/Tcl/library
+cd /home/groups/btl/OREO/CurrentVersion
+
+#array set milk [list \
+#        telPos "(405:00:00, 45:00:00)" \
+#        azElPos "(45:00:00, 45:00:00)" \
+#        primaryAvoidFWHM 5. \
+#        solarAvoid 10 \
+#        lunarAvoid 5 \
+#        catalog ../Catalogs/Primary.cat \
+#        rcvr Rcvr8_10 \
+#        limit 1.4 \
+#        freq 8.5 \
+#        setTimeLimit 1.0 \
+#        maxMoveTime 999999 \
+#        numBreakSources 999999  \
+#        numSrcs 1 \
+#        avoidCurrent 0 \
+#        effLimit 1.4 \
+#        test 0 \
+#        ]
+
+set milk(test) 0
+
+parseArgv2Milk
+
+if $milk(test) {
+    parray milk
+}
+
+# puts stderr $argv
+# puts stderr [parray milk]
+
+foreach {AzEnc ElEnc} [decodeTelePos $milk(telPos)] { break }
+foreach {Az El} [decodeTelePos $milk(azElPos)] { break }
+
+set now [clock seconds]
+set lst [tclTimeToLST $now]
+set jd [mjdToJD [tclTimeToMJD $now]]
+set lat 38.433121
+
+set checkPos(objects) [list ]
+# Dont find sources within n FWHM beamwidths
+if $milk(avoidCurrent) {
+    lappend checkPos(objects) Tele
+    set checkPos(Tele,Az) $Az
+    set checkPos(Tele,El) $El
+    set checkPos(Tele,sep) [expr {$milk(primaryAvoidFWHM)*0.21/$milk(freq)}]
+}
+
+foreach {long anom dist} [sunposition $jd] { break }
+foreach {ra dec} [ecltoequ $long 0] { break }
+foreach {azSun elSun} [equtolocal [expr {$lst - $ra}] $dec $lat] {break }
+if {$elSun > 0} {
+    lappend checkPos(objects) Sun
+    set checkPos(Sun,Az) $azSun
+    set checkPos(Sun,El) $elSun
+    set checkPos(Sun,sep) $milk(solarAvoid)
+}
+
+foreach {long lat dist} [moonposition $jd] { break }
+foreach {ra dec} [ecltoequ $long $lat] { break }
+foreach {azMoon elMoon} [equtolocal [expr {$lst - $ra}] $dec $lat] {break }
+if {$elMoon > 0} {
+    lappend checkPos(objects) Moon
+    set checkPos(Moon,Az) $azMoon
+    set checkPos(Moon,El) $elMoon
+    set checkPos(Moon,sep) $milk(lunarAvoid)
+}
+
+set srcList [findNearbySources $milk(catalog) $milk(rcvr) $milk(freq) $milk(effLimit) $AzEnc $ElEnc $milk(setTimeLimit) \
+        $milk(maxMoveTime) $milk(numBreakSources) ]
+
+if {$milk(numSrcs) == 0} {
+    set srcs [lindex [lindex $srcList 0] 0]
+} else {
+    set srcs [join [lrange $srcList 0 $milk(numSrcs)-1]]
+}
+if $milk(test) {
+    puts $srcs
+} else {
+    puts -nonewline $srcs
+}

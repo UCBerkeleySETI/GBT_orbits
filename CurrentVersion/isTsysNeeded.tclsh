@@ -1,0 +1,36 @@
+#! /bin/sh
+#
+#   $Header$
+#
+#   $Copyright$
+#
+# The next line restarts using wish \
+exec tclsh "$0" "$@"
+
+lappend auto_path /users/rmaddale/Tcl/library
+set env(CLEODIR) /users/rmaddale/Tcl
+cd /home/groups/btl/OREO/CurrentVersion
+
+#set milk(tsysLogFile) ../logfileTsys.txt
+#set milk(cadenceTsys) 1
+
+parseArgv2Milk
+
+if [file exists $milk(tsysLogFile)] {
+    set lastTsys [exec tail -1 $milk(tsysLogFile)]
+
+    if {[isNumber [lindex $lastTsys end]] && [lindex $lastTsys end] > 5} {
+        set deltaTs [expr {[clock seconds] - [clock scan [lindex $lastTsys 0]]}]
+
+        if {$deltaTs > $milk(cadenceTsys)*3600} {
+            puts -nonewline "1 Time"
+        } else {
+            puts -nonewline "0 OK"
+        }
+    } else {
+        puts -nonewline "1 LastLogEntryInvalid"
+    }
+
+} else {
+    puts -nonewline "1 NoLogFile"
+}

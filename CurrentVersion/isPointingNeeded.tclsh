@@ -1,0 +1,44 @@
+#! /bin/sh
+#
+#   $Header$
+#
+#   $Copyright$
+#
+# The next line restarts using wish \
+exec tclsh "$0" "$@"
+
+lappend auto_path /users/rmaddale/Tcl/library
+set env(CLEODIR) /users/rmaddale/Tcl
+cd /home/groups/btl/OREO/CurrentVersion
+
+#set milk(telPos) "(60:00:00,30:00:00)"
+#set milk(apfLogFile) ../logfile.txt
+#set milk(distancePeak) 5
+#set milk(cadencePeakFocus) 5
+
+parseArgv2Milk
+
+foreach {AzEnc ElEnc} [decodeTelePos $milk(telPos)] { break }
+
+if [file exists $milk(apfLogFile)] {
+
+    set lastPnt [exec tail -1 $milk(apfLogFile)]
+
+    if {[isNumber [lindex $lastPnt end]] && [lindex $lastPnt end] > 5} {
+        set deltaTs [expr {[clock seconds] - [clock scan [lindex $lastPnt 0]]}]
+        set deltaAz [Circ [expr {abs(360. + $AzEnc - [lindex $lastPnt end-1])}] 360.]
+        set deltaEl [expr {abs($ElEnc - [lindex $lastPnt end])}]
+
+        if {$deltaTs > $milk(cadencePeakFocus)*3600} {
+            puts -nonewline "1 Time"
+        } elseif {$deltaAz > $milk(distancePeak) || $deltaEl > $milk(distancePeak)} {
+            puts -nonewline "1 Distance"
+        } else {
+            puts -nonewline "0 OK"
+        }
+    } else {
+        puts -nonewline "1 LastLogEntryInvalid"
+    }
+} else {
+    puts -nonewline "1 NoLogFile"
+}
