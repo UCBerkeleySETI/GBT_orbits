@@ -8,6 +8,18 @@
 exec tclsh "$0" "$@"
 
 set fid [open /home/groups/btl/OREO/answers.txt r]
-puts -nonewline [read $fid]
+set contents [read $fid]
 close $fid
+
+array set oreo $contents
+
+if [catch {exec ~dmacmaho/local/src/redis-5.0.4-RHEL-6.10/src/redis-cli -h bl-head set OREOStopSeconds $oreo(stopTime)} rslts] {
+    puts -nonewline stderr "Unable to REDIS the stop time: $rslts"
+}
+
+puts -nonewline $contents
+
+
+
+
 

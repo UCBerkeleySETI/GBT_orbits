@@ -1,7 +1,7 @@
 # S-band config script cleaned up 1/11/2018
 # This is the standard S-band config until futher notice.
 
-execfile('/users/rmaddale/BTL/CurrentVersion/btlmgr_utils.py')
+execfile('/home/groups/btl/OREO/CurrentVersion/btlmgr_utils.py')
 global oreo
 
 rcvr = GetValue("LO1","receiver")
@@ -10,9 +10,23 @@ if rcvr != "Rcvr2_3":
    print "Current Receiver is NOT S-band"
    Break(("Current Receiver is " +rcvr+", NOT S-band, aka Rcvr2_3"), None)
 
-SetValues("VEGAS",{"state":"on"})
-
 ResetConfig()
+
+DCRConfig="""
+receiver = 'Rcvr2_3'
+restfreq = %freq
+deltafreq=0
+nwin=1
+obstype = 'Continuum'
+backend = 'DCR'
+bandwidth = 20
+tint = 0.5
+swper=0.5
+swmode = 'tp'
+vframe = 'topo'
+vdef='Radio'
+"""
+DCRConfig=DCRConfig.replace("%freq",oreo['freq'])
 
 # Main configuration
 config_g="""
@@ -23,7 +37,7 @@ obstype = 'Spectroscopy'
 backend = 'VEGAS'
 bandwidth = 1500
 tint  = 1
-swmode = 'tp'
+swmode = 'tp_nocal'
 noisecal = 'lo'
 swtype = 'none'
 swper = 0.04
@@ -59,16 +73,3 @@ SetValues("ScanCoordinator", {
     "switching_signals_master": "DCR"
 })
 
-#Turn off Cal
-rcvr = GetValue("LO1","receiver")
-if rcvr in ["Rcvr12_18","RcvrArray18_26","Rcvr26_40","Rcvr40_52","Rcvr68_92","RcvrArray75_116","Rcvr_MBA1_5"]:
-    print "I'm sorry Dave, I'm afraid I can't do that."
-    Break("Advanced control of receiver noise diodes is not supported for %s"%rcvr)
-
-else:
-    SetValues(rcvr, {
-        "xlExtToMCBCtrlSel":"ctlMcb",
-        "yrExtToMCBCtrlSel":"ctlMcb",
-        "xlCPUNoiseSwCtrl":"swOff",
-        "yrCPUNoiseSwCtrl":"swOff"
-    })

@@ -2,7 +2,7 @@
 # This is the standard X-band config until futher notice.
 # Three bank observing with 24 nodes. Center Frequency is 9375 MHz
 
-execfile('/home/groups/btl/OREO/CurrentVersion/btlmgr_utils.py')
+execfile('/home/groups/btl/GBT_oreo/CurrentVersion/btlmgr_utils.py')
 global oreo
 
 rcvr = GetValue("LO1","receiver")
@@ -11,11 +11,13 @@ if rcvr != "Rcvr8_10":
    print "Current Receiver is NOT X-band"
    Break(("Current Receiver is " +rcvr+", NOT X-band, aka Rcvr8_10"), None)
 
+#SetValues("VEGAS",{"state":"on"})
+
 ResetConfig()
 
 DCRConfig="""
 receiver = 'Rcvr8_10'
-restfreq = %freq
+restfreq = 9375.0
 deltafreq=0
 nwin=1
 obstype = 'Continuum'
@@ -27,7 +29,6 @@ swmode = 'tp'
 vframe = 'topo'
 vdef='Radio'
 """
-DCRConfig=DCRConfig.replace("%freq",oreo['freq'])
 
 # Main configuration
 #restfreq_40 = 4000.,4000.,4000.,4000.,4000.,4000.,4000.,4000.
@@ -43,7 +44,7 @@ obstype = 'Spectroscopy'
 backend = 'VEGAS'
 bandwidth = 1500
 tint  = 1
-swmode = 'tp_nocal'
+swmode = 'tp'
 noisecal = 'lo'
 swtype = 'none'
 swper = 0.04
@@ -78,3 +79,18 @@ SetValues("ScanCoordinator", {
     "subsystemSelect,DCR":"1",
     "switching_signals_master": "DCR"
 })
+
+#Turn off Cal
+rcvr = GetValue("LO1","receiver")
+if rcvr in ["Rcvr12_18","RcvrArray18_26","Rcvr26_40","Rcvr40_52","Rcvr68_92","RcvrArray75_116","Rcvr_MBA1_5"]:
+    print "I'm sorry Dave, I'm afraid I can't do that."
+    Break("Advanced control of receiver noise diodes is not supported for %s"%rcvr)
+
+else:
+    SetValues(rcvr, {
+        "xlExtToMCBCtrlSel":"ctlMcb",
+        "yrExtToMCBCtrlSel":"ctlMcb",
+        "xlCPUNoiseSwCtrl":"swOff",
+        "yrCPUNoiseSwCtrl":"swOff"
+    })
+

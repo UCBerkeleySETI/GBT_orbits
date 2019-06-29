@@ -2,8 +2,7 @@
 # This is the standard KFPA-band config.
 # Three bank observing with 64 nodes. Center Frequency is 22,000 MHz
 
-
-execfile('/users/rmaddale/BTL/CurrentVersion/btlmgr_utils.py')
+execfile('/home/groups/btl/OREO/CurrentVersion/btlmgr_utils.py')
 global oreo
 
 rcvr = GetValue("LO1","receiver")
@@ -12,17 +11,16 @@ if rcvr != "RcvrArray18_26":
    print "Current Receiver is NOT KFPA-band"
    Break(("Current Receiver is " +rcvr+", NOT KFPA-band, aka RcvrArray18_26"), None)
 
-
 ResetConfig()
 
 DCRConfig="""
-receiver = 'Rcvr18_10'
-restfreq = 22250.0
+receiver = 'RcvrArray18_26'
+restfreq = %freq
 deltafreq=0
 nwin=1
 obstype = 'Continuum'
-backend = 'DCR'
-bandwidth = 20
+backend = 'DCR_AF'
+bandwidth = 200
 tint = 0.5
 swper=0.5
 swmode = 'tp'
@@ -30,6 +28,7 @@ vframe = 'topo'
 vdef='Radio'
 broadband=1
 """
+DCRConfig=DCRConfig.replace("%freq",oreo['freq'])
 
 # Main configuration
 #Note that water massers are at 22,235 MHz
@@ -82,26 +81,9 @@ SetValues("SwitchingSignalSelector",{
     "selSigRef": "Source_0",
     "selAdvSigRef": "Source_0",
     "selBlanking": "Source_0"
-#EE do we need     "state" : "prepare"  here? 
 })
 SetValues("ScanCoordinator", {
     "subsystemSelect,DCR":"1",
     "switching_signals_master": "DCR"
-#EE do we need     "state" : "prepare"  here? 
+
 })
-
-
-#Turn off Cal
-#rcvr = GetValue("LO1","receiver")
-#if rcvr in ["Rcvr12_18","Rcvr26_40","Rcvr40_52","Rcvr68_92","RcvrArray75_116","Rcvr_MBA1_5"]:
-    #print "I'm sorry Dave, I'm afraid I can't do that."
-    #Break("Advanced control of receiver noise diodes is not supported for %s"%rcvr)
-
-#else:
-    #SetValues(rcvr, {
-        #"xlExtToMCBCtrlSel":"ctlMcb",
-        #"yrExtToMCBCtrlSel":"ctlMcb",
-        #"xlCPUNoiseSwCtrl":"swOff",
-        #"yrCPUNoiseSwCtrl":"swOff"
-##EE do we need     "state" : "prepare"  here? 
-    #})
