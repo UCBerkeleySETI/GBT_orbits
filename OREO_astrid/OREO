@@ -48,6 +48,11 @@ if oreo['doCalib'] == "1":
     print "Observing Calibrator", calSrc
     OnOff(calSrc,Offset('J2000', oreo['OnOffDelRA'], oreo['OnOffDelDec'], cosv=True), oreo['OnOffDuration'], '1')
 
+    SetValues("ScanCoordinator",{"cal_state,1":"Noise"})
+    Annotation("CALSTATE","CALON")
+    Track(calSrc,None,oreo['OnOffDuration'], '1',fixedOffset=Offset('J2000', oreo['OnOffDelRA'], oreo['OnOffDelDec'], cosv=True))
+    SetValues("ScanCoordinator",{"cal_state,1":"NoNoise"})
+    Annotation("CALSTATE","CALOFF")
 
 #--------------------------
 # Pulsar
