@@ -27,25 +27,28 @@ Catalog(oreo['pulsarCat'])
 Catalog(oreo['calibCat'])
 
 #--------------------------
+#Config
+
 if oreo['online'] and oreo['doConfig'] == "1":
     print "Configuring using Exec of ", oreo["configFile"]
     oreo['doBalance']=True
     execfile(oreo['configFile'])
-    # PubBLHead("command:update_obsfreq")
-
+    # PubBLHead("command:update_obsfreq")    
+   
 oreo['doBalance']=False
 
 #--------------------------
-# Find name of calibrator with the minimum move time
-#
-if oreo['doCalib'] == "1":
+#Calibrator
 
+if oreo['doCalib'] == "1":
+    # Find name of calibrator with the minimum move time
     calSrc = popen(["/home/groups/btl/OREO/CurrentVersion/whichSources.tclsh", "numSrcs 0 avoidCurrent 0", "catalog", oreo['calibCat'], str(oreo)])
     print "Selected calibrator:", calSrc
 
     checkLastPointingTsys(calSrc)
 
     print "Observing Calibrator", calSrc
+    PubBLHead("Observing Calibrator: "+calSrc)
     OnOff(calSrc,Offset('J2000', oreo['OnOffDelRA'], oreo['OnOffDelDec'], cosv=True), oreo['OnOffDuration'], '1')
 
     SetValues("ScanCoordinator",{"cal_state,1":"Noise"})
@@ -56,7 +59,7 @@ if oreo['doCalib'] == "1":
 
 #--------------------------
 # Pulsar
-#
+#          
 if oreo['doPulsar'] == "1":
 
     psrSrc = popen(["/home/groups/btl/OREO/CurrentVersion/whichSources.tclsh", "numSrcs 0 avoidCurrent 0", "catalog", oreo['pulsarCat'], str(oreo)])
@@ -64,7 +67,8 @@ if oreo['doPulsar'] == "1":
 
     checkLastPointingTsys(psrSrc)
 
-    print "Observing pulsar", psrSrc
+    print "Observing Pulsar", psrSrc
+    PubBLHead("Observing Pulsar: "+psrSrc)
     Track(psrSrc,None,oreo['pulsarDuration'])
 
     #Canary run.

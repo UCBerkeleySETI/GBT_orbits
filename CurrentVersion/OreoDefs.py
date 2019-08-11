@@ -101,9 +101,11 @@ def pntFoc( objName ):
     Slew(objName)
     if oreo['doFocus'] == "T":
         print "AutoPeakFocus near", objName, " with min flux of ", float(oreo["peakMinFlux"])
+        PubBLHead("Executing AutoPeakFocus")
         AutoPeakFocus(flux=float(oreo["peakMinFlux"]))
     else:
         print "AutoPeak near", objName, " with min flux of ", float(oreo["peakMinFlux"])
+        PubBLHead("Executing AutoPeak")
         AutoPeak(flux=float(oreo["peakMinFlux"]))
 
     restoreAtten()
@@ -119,6 +121,7 @@ def measureTsys():
     global oreo
 
     print "Configuring DCR and executing Tsys measurement"
+    PubBLHead("Configuring DCR and executing Tsys measurement")
 
     saveAtten
     if oreo['online']:
