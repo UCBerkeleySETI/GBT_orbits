@@ -33,7 +33,7 @@ if oreo['online'] and oreo['doConfig'] == "1":
     print "Configuring using Exec of ", oreo["configFile"]
     oreo['doBalance']=True
     execfile(oreo['configFile'])
-    # PubBLHead("command:update_obsfreq")    
+    PubBLHead("command:update_obsfreq")
    
 oreo['doBalance']=False
 
