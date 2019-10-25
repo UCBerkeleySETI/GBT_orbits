@@ -7,8 +7,8 @@
 # The next line restarts using wish \
 exec tclsh "$0" "$@"
 
-set env(CLEODIR) /users/rmaddale/Tcl
-lappend auto_path /users/rmaddale/Tcl/library
+set env(CLEODIR) /users/mlebofsk/Tcl
+lappend auto_path /users/mlebofsk/Tcl/library
 cd /home/groups/btl/OREO/CurrentVersion
 
 #array set milk [list \
