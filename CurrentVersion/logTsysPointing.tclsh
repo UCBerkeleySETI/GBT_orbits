@@ -9,7 +9,7 @@ exec tclsh "$0" "$@"
 
 lappend auto_path /users/rmaddale/Tcl/library
 set env(CLEODIR) /users/rmaddale/Tcl
-cd /home/groups/btl/OREO/CurrentVersion
+cd /home/groups/btl/ORBITS/CurrentVersion
 
 #array set milk [list \
 #        telPos "(180:00:00, 80:00:00)" \
@@ -33,7 +33,7 @@ if [info exists milk(logfile)] {
 } elseif [info exists milk(apfLogFile)] {
     set logfile $milk(apfLogFile)
 } else {
-    set logfile /home/groups/btl/OREO/logfile.txt
+    set logfile /home/groups/btl/ORBITS/logfile.txt
 }
 
 switch $logfile {

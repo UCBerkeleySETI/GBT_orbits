@@ -1,0 +1,122 @@
+import os
+import subprocess
+import time
+
+# Default ORBITS Values
+orbits={}
+orbits['OnOffDuration']=120                   # Length of calibration observations in sec
+orbits['OnOffDelRA']=0.0                      # Delta RA and Dec, in degrees for calibration OnOff and for Tsys observations
+orbits['OnOffDelDec']=1.0
+orbits['pulsarDuration']=300                  # length of pulsar observations in sec
+orbits['obsDuration']=300                     # length of primary/secondary onbservations in sec
+orbits['setTimeLimit']=0.75                   # Approximate length of a full sequence of observations in hours, plus a buffer
+orbits['maxMoveTime']=1e10                    # when searching for sources, only use those whose move times are below this limit
+orbits['numBreakSources']=999999              # when searching a large catalog, the number of objects that are above the
+                                            #horizon within the specified move time that are to be considered.
+orbits['solarAvoid']=10                       # solar avoidance radius in deg
+orbits['lunarAvoid']=2                        # lunar avoidance radius in deg
+orbits['primaryAvoidFWHM']=5                  # radius that secondary sources must lie away from a primary source, in deg.
+orbits['tsysLogFile'] = "../logfileTsys.txt"  # Log file for Tsys measurements
+orbits['apfLogFile'] = "../logfile.txt"    # Log file for APF measurements
+orbits['tsysDur'] = 15                        # Duration for a Tsys measurement in seconds
+
+#----------------------
+# Hack as a way to determine if we're on or ofline
+if GetLST() is None :
+    print "You are working OFFLINE"
+    orbits["online"]=False
+else:
+    print "Warning:  You are working ONLINE"
+    orbits["online"]=True
+
+
+# **** The home of the external routines needs to be established
+os.chdir( "/users/rmaddale/BTL/TestSource")
+execfile("/users/rmaddale/BTL/TestSource/OrbitsDefs.py")
+
+rslts = popen(["/users/rmaddale/BTL/TestSource/askQuestion.tclsh"])
+parseCLEO2ORBITS(rslts)
+
+# Time for end of session
+stopTime = float(orbits['sessionDur'])*3600 + time.time()
+
+#-------------------------
+print "Loading catalogs:", orbits['pulsarCat'], orbits['calibCat']
+Catalog(orbits['pulsarCat'])
+Catalog(orbits['calibCat'])
+
+#--------------------------
+if orbits['online'] and orbits['doConfig'] == "1":
+    print "Configuring using Exec of ", orbits["configFile"]
+    orbits['doBalance']=True
+    execfile(orbits['configFile'])
+
+orbits['doBalance']=False
+
+#--------------------------
+# Find name of calibrator with the minimum move time
+#
+if orbits['doCalib'] == "1":
+
+    calSrc = popen(["/users/rmaddale/BTL/TestSource/whichSources.tclsh", "numSrcs 0 avoidCurrent 0", "catalog", orbits['calibCat'], str(orbits)])
+    print "Selected calibrator:", calSrc
+
+    checkLastPointingTsys(calSrc)
+
+    print "Observing Calibrator", calSrc
+    OnOff(calSrc,Offset('J2000', orbits['OnOffDelRA'], orbits['OnOffDelDec'], cosv=True), orbits['OnOffDuration'], '1')
+
+#--------------------------
+# Pulsar
+#
+if orbits['doPulsar'] == "1":
+
+    psrSrc = popen(["/users/rmaddale/BTL/TestSource/whichSources.tclsh", "numSrcs 0 avoidCurrent 0", "catalog", orbits['pulsarCat'], str(orbits)])
+    print "Selected pulsar:", psrSrc
+
+    checkLastPointingTsys(psrSrc)
+
+    print "Observing pulsar", psrSrc
+    Track(psrSrc,None,orbits['pulsarDuration'])
+
+# Primary and secondary sources
+#
+while time.time() < stopTime:
+
+    # Find a primary source
+    rslts = popen(["/users/rmaddale/BTL/TestSource/whichSources.tclsh", "numSrcs 1 avoidCurrent 0", "catalog", orbits['primaryCat'], str(orbits)])
+    (primeSrcName,mt,primeSrcRa,primeSrcDec)=rslts.split()
+
+    print "Selected primary and slewing to:", primeSrcName, primeSrcRa, primeSrcDec
+    primeLoc=Location('J2000', primeSrcRa, primeSrcDec)
+
+    checkLastPointingTsys(primeLoc)
+
+    # Find three secondary sources
+    Slew(primeLoc)
+    rslts = popen(["/users/rmaddale/BTL/TestSource/whichSources.tclsh", "numSrcs 3 avoidCurrent 1", "catalog", orbits['secondaryCat'], str(orbits)])
+    secondarySrcs={}
+    parseSecondaries(rslts)
+
+    print "Selected secondaries"
+    for j in range(0,3):
+        print "     ", j, secondarySrcs["srcName"+str(j)], secondarySrcs["srcRA"+str(j)], secondarySrcs["srcDec"+str(j)]
+
+    # OK... do the observing (finally)
+    for j in range(0,3):
+        print "Primary",j+1,
+        obsSource(primeSrcName,                    primeSrcRa,                    primeSrcDec,              orbits['obsDuration'])
+        print "Secondary",j+1,
+        obsSource(secondarySrcs["srcName"+str(j)], secondarySrcs["srcRA"+str(j)], secondarySrcs["srcDec"+str(j)], orbits['obsDuration'])
+
+    if orbits['online']:
+        print "Updating catalogs"
+        p = popen(["/users/rmaddale/BTL/TestSource/updateCatalog.tclsh", primeSrcName, orbits['primaryCat'], orbits['rcvr']])
+        # for j in range(0,3):
+        #    p = popen(["/users/rmaddale/BTL/TestSource/updateCatalog.tclsh", secondarySrcs["srcName"+str(j)], orbits['secondaryCat'], orbits['rcvr']])
+
+    if not orbits['online']:
+        # If we are not online, then exit the while loop
+        stopTime = 0
+
+Break("Session has finished")

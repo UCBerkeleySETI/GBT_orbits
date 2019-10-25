@@ -2,30 +2,30 @@ import os
 import subprocess
 import time
 
-# Default OREO Values
-oreo={}
-oreo['OnOffDuration']=120
-oreo['OnOffDelRA']=1.0
-oreo['OnOffDelDec']=0.0
-oreo['pulsarDuration']=120
-oreo['obsDuration']=120
-oreo['setTimeLimit']=4.*oreo['obsDuration']/3600.
-oreo['maxMoveTime']=1e10
-oreo['numBreakSources']=1000
-oreo['solarAvoid']=10
-oreo['lunarAvoid']=2
-oreo['primaryAvoidFWHM']=5
-oreo['tsysTolerance'] = 15
-oreo['tsysNSamps'] = 4
-oreo['tsysLogFile'] = "../logfile.txt"
+# Default ORBITS Values
+orbits={}
+orbits['OnOffDuration']=120
+orbits['OnOffDelRA']=1.0
+orbits['OnOffDelDec']=0.0
+orbits['pulsarDuration']=120
+orbits['obsDuration']=120
+orbits['setTimeLimit']=4.*orbits['obsDuration']/3600.
+orbits['maxMoveTime']=1e10
+orbits['numBreakSources']=1000
+orbits['solarAvoid']=10
+orbits['lunarAvoid']=2
+orbits['primaryAvoidFWHM']=5
+orbits['tsysTolerance'] = 15
+orbits['tsysNSamps'] = 4
+orbits['tsysLogFile'] = "../logfile.txt"
 
 #----------------------
-# Fill in Oreo dictionary from what cleo returns
-def parseCLEO2OREO( arr ):
-    global oreo
+# Fill in orbits dictionary from what cleo returns
+def parseCLEO2ORBITS( arr ):
+    global orbits
     aa=arr.split()
     for j in range(0,len(aa),2):
-        oreo[aa[j]]=aa[j+1]
+        orbits[aa[j]]=aa[j+1]
 
 #----------------------
 # Fill in dictionary for secondary sources from what cleo returns
@@ -51,30 +51,30 @@ def obsSource( name, ra, dec, duration ):
 # Wrapper for an AutoPeak(Focus) for a position near that of objName
 def pntFoc( objName, doConfig ):
 
-    global oreo
+    global orbits
 
     Slew(objName)
-    oreo['telPos'] = str(GetCurrentLocation("Encoder")).replace(" ","")
+    orbits['telPos'] = str(GetCurrentLocation("Encoder")).replace(" ","")
 
-    if oreo['doFocus'] == "T":
+    if orbits['doFocus'] == "T":
         print "AutoPeakFocus", objName
         AutoPeakFocus(location=objName,balance=False)
     else:
        print "AutoPeak", objName
        AutoPeak(location=objName,balance=False)
 
-    if oreo['online']:
+    if orbits['online']:
         print "Updating Tsys logfile"
-        p = subprocess.Popen(["logTsysPointing.tclsh", str(oreo)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        p = subprocess.Popen(["logTsysPointing.tclsh", str(orbits)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         (rslts, errP) = p.communicate()
         if errP != "":
             print errP
             Break(errP,600)
 
-    if oreo['online'] and doConfig:
-        print "Reconfiguring using:", oreo['configFile']
-        Configure(oreo['configFile'],Balance=False)
-        execfile(oreo['configFile'])
+    if orbits['online'] and doConfig:
+        print "Reconfiguring using:", orbits['configFile']
+        Configure(orbits['configFile'],Balance=False)
+        execfile(orbits['configFile'])
 
     Slew(objName)
      
@@ -83,10 +83,10 @@ def pntFoc( objName, doConfig ):
 # Hack as a way to determine if we're on or ofline
 if GetLST() is None :
     print "You are working OFFLINE"
-    oreo["online"]=False
+    orbits["online"]=False
 else:
     print "Warning:  You are working ONLINE"
-    oreo["online"]=True
+    orbits["online"]=True
 
 
 # **** The home of the external routines needs to be esatblished
@@ -101,29 +101,29 @@ if errP != "":
     print "**** Error in determining receiver:", errP
     Break("**** Error in determining receiver")
 else:
-    parseCLEO2OREO(rslts)
+    parseCLEO2ORBITS(rslts)
 
     # Time for end of session
-    stopTime = float(oreo['sessionDur'])*3600 + time.time()
+    stopTime = float(orbits['sessionDur'])*3600 + time.time()
 
     #-------------------------
-    Catalog(oreo['pulsarCat'])
-    Catalog(oreo['calibCat'])
+    Catalog(orbits['pulsarCat'])
+    Catalog(orbits['calibCat'])
 
     #--------------------------
-    print "Configuring using:", oreo["configFile"]
-    if oreo['online']:
-        execfile(oreo['configFile'])
+    print "Configuring using:", orbits["configFile"]
+    if orbits['online']:
+        execfile(orbits['configFile'])
 
     #--------------------------
     # Find name of calibrator with the minimum move time
     #
-    if oreo['doCalib'] == "1":
+    if orbits['doCalib'] == "1":
 
         Balance()
-        oreo['telPos'] = str(GetCurrentLocation("Encoder")).replace(" ","")
+        orbits['telPos'] = str(GetCurrentLocation("Encoder")).replace(" ","")
 
-        p = subprocess.Popen(["whichSources.tclsh", "numSrcs 0", "catalog", oreo['calibCat'], str(oreo)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        p = subprocess.Popen(["whichSources.tclsh", "numSrcs 0", "catalog", orbits['calibCat'], str(orbits)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         (calSrc, errP) = p.communicate()
         if errP != "":
             print errP
@@ -131,19 +131,19 @@ else:
 
         print "Selected calibrator:", calSrc
 
-        if oreo['doPnt'] == "1":
+        if orbits['doPnt'] == "1":
             pntFoc(calSrc, True)
-            oreo['doPnt']="0"
+            orbits['doPnt']="0"
 
-        OnOff(calSrc,Offset('J2000', oreo['OnOffDelRA'], oreo['OnOffDelDec'], cosv=False), oreo['OnOffDuration'], '1')
+        OnOff(calSrc,Offset('J2000', orbits['OnOffDelRA'], orbits['OnOffDelDec'], cosv=False), orbits['OnOffDuration'], '1')
 
     #--------------------------
     # Pulsar
     #
-    if oreo['doPulsar'] == "1":
+    if orbits['doPulsar'] == "1":
 
-        oreo['telPos'] = str(GetCurrentLocation("Encoder")).replace(" ","")
-        p = subprocess.Popen(["whichSources.tclsh", "numSrcs 0", "catalog", oreo['pulsarCat'], str(oreo)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        orbits['telPos'] = str(GetCurrentLocation("Encoder")).replace(" ","")
+        p = subprocess.Popen(["whichSources.tclsh", "numSrcs 0", "catalog", orbits['pulsarCat'], str(orbits)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         (psrSrc, errP) = p.communicate()
         if errP != "":
             print errP
@@ -151,19 +151,19 @@ else:
 
         print "Selected pulsar:", psrSrc
 
-        if oreo['doPnt'] == "1":
+        if orbits['doPnt'] == "1":
             pntFoc(psrSrc, True)
             doPnt="0"
         
-        Track(psrSrc,None,oreo['pulsarDuration'])
+        Track(psrSrc,None,orbits['pulsarDuration'])
 
     # Primary and secondary sources
     #
     while time.time() < stopTime:
 
         # Find a primary source
-        oreo['telPos'] = str(GetCurrentLocation("Encoder")).replace(" ","")
-        p = subprocess.Popen(["whichSources.tclsh", "numSrcs 1", "catalog", oreo['primaryCat'], str(oreo)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        orbits['telPos'] = str(GetCurrentLocation("Encoder")).replace(" ","")
+        p = subprocess.Popen(["whichSources.tclsh", "numSrcs 1", "catalog", orbits['primaryCat'], str(orbits)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         (rslts, errP) = p.communicate()
         if errP != "":
             print errP
@@ -177,19 +177,19 @@ else:
         Slew(primeLoc)
 
         # Do we still need to point?  Or, is anothe rone needed?
-        oreo['telPos'] = str(GetCurrentLocation("Encoder")).replace(" ","")
-        p = subprocess.Popen(["isPointingNeeded.tclsh",str(oreo)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        orbits['telPos'] = str(GetCurrentLocation("Encoder")).replace(" ","")
+        p = subprocess.Popen(["isPointingNeeded.tclsh",str(orbits)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         (needToPoint, errP) = p.communicate()
         if errP != "":
             print errP
             Break(errP)
 
-        if oreo['doPnt'] == "1" or needToPoint == "1":
+        if orbits['doPnt'] == "1" or needToPoint == "1":
             pntFoc(primeLoc, True)
             doPnt="0"
 
         # Find three secondary sources
-        p = subprocess.Popen(["whichSources.tclsh", "numSrcs 3", "catalog", oreo['secondaryCat'], str(oreo)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        p = subprocess.Popen(["whichSources.tclsh", "numSrcs 3", "catalog", orbits['secondaryCat'], str(orbits)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         (rslts, errP) = p.communicate()
         if errP != "":
             print errP
@@ -204,14 +204,14 @@ else:
 
         # OK... do the observing (finally)
         for j in range(0,3):
-            obsSource(primeSrcName,                    primeSrcRa,                    primeSrcDec,              oreo['obsDuration'])
-            obsSource(secondarySrcs["srcName"+str(j)], secondarySrcs["srcRA"+str(j)], secondarySrcs["srcDec"+str(j)], oreo['obsDuration'])
+            obsSource(primeSrcName,                    primeSrcRa,                    primeSrcDec,              orbits['obsDuration'])
+            obsSource(secondarySrcs["srcName"+str(j)], secondarySrcs["srcRA"+str(j)], secondarySrcs["srcDec"+str(j)], orbits['obsDuration'])
 
-        if oreo['online']: 
+        if orbits['online']: 
             print "Updating catalogs"
 
             # primary source
-            p = subprocess.Popen(["updateCatalog.tclsh", primeSrcName, oreo['primaryCat'], oreo['rcvr']],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+            p = subprocess.Popen(["updateCatalog.tclsh", primeSrcName, orbits['primaryCat'], orbits['rcvr']],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
             (rslts, errP) = p.communicate()
             if errP != "":
                 print errP
@@ -219,12 +219,12 @@ else:
 
             # secondary sources
             for j in range(0,3):
-                p = subprocess.Popen(["updateCatalog.tclsh", secondarySrcs["srcName"+str(j)], oreo['secondaryCat'], oreo['rcvr']],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+                p = subprocess.Popen(["updateCatalog.tclsh", secondarySrcs["srcName"+str(j)], orbits['secondaryCat'], orbits['rcvr']],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
                 (rslts, errP) = p.communicate()
                 if errP != "":
                     print errP
                     Break(errP)
 
-        if not oreo['online']:
+        if not orbits['online']:
             # If we are not online, then exit the while loop
             stopTime = 0

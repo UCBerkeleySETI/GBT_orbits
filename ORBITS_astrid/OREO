@@ -3,73 +3,73 @@ import subprocess
 import time
 
 # **** The home of the external routines needs to be established
-execfile("/home/groups/btl/OREO/CurrentVersion/OreoDefs.py")
+execfile("/home/groups/btl/ORBITS/CurrentVersion/OrbitsDefs.py")
 
 #----------------------
 # Hack as a way to determine if we're on or offline
 if GetLST() is None :
     print "You are working OFFLINE"
-    oreo["online"]=False
+    orbits["online"]=False
 else:
     print "Warning:  You are working ONLINE"
-    oreo["online"]=True
+    orbits["online"]=True
 
-rslts = popen(["/home/groups/btl/OREO/CurrentVersion/askQuestion.tclsh"])
-parseCLEO2OREO(rslts)
+rslts = popen(["/home/groups/btl/ORBITS/CurrentVersion/askQuestion.tclsh"])
+parseCLEO2ORBITS(rslts)
 
 # Time for end of session
-# stopTime = float(oreo['sessionDur'])*3600 + time.time()
-stopTime = oreo['stopTime']
+# stopTime = float(orbits['sessionDur'])*3600 + time.time()
+stopTime = orbits['stopTime']
 
 #-------------------------
-print "Loading catalogs:", oreo['pulsarCat'], oreo['calibCat']
-Catalog(oreo['pulsarCat'])
-Catalog(oreo['calibCat'])
+print "Loading catalogs:", orbits['pulsarCat'], orbits['calibCat']
+Catalog(orbits['pulsarCat'])
+Catalog(orbits['calibCat'])
 
 #--------------------------
 #Config
 
-if oreo['online'] and oreo['doConfig'] == "1":
-    print "Configuring using Exec of ", oreo["configFile"]
-    oreo['doBalance']=True
-    execfile(oreo['configFile'])
+if orbits['online'] and orbits['doConfig'] == "1":
+    print "Configuring using Exec of ", orbits["configFile"]
+    orbits['doBalance']=True
+    execfile(orbits['configFile'])
     PubBLHead("command:update_obsfreq")
    
-oreo['doBalance']=False
+orbits['doBalance']=False
 
 #--------------------------
 #Calibrator
 
-if oreo['doCalib'] == "1":
+if orbits['doCalib'] == "1":
     # Find name of calibrator with the minimum move time
-    calSrc = popen(["/home/groups/btl/OREO/CurrentVersion/whichSources.tclsh", "numSrcs 0 avoidCurrent 0", "catalog", oreo['calibCat'], str(oreo)])
+    calSrc = popen(["/home/groups/btl/ORBITS/CurrentVersion/whichSources.tclsh", "numSrcs 0 avoidCurrent 0", "catalog", orbits['calibCat'], str(orbits)])
     print "Selected calibrator:", calSrc
 
     checkLastPointingTsys(calSrc)
 
     print "Observing Calibrator", calSrc
     PubBLHead("Observing Calibrator: "+calSrc)
-    OnOff(calSrc,Offset('J2000', oreo['OnOffDelRA'], oreo['OnOffDelDec'], cosv=True), oreo['OnOffDuration'], '1')
+    OnOff(calSrc,Offset('J2000', orbits['OnOffDelRA'], orbits['OnOffDelDec'], cosv=True), orbits['OnOffDuration'], '1')
 
     SetValues("ScanCoordinator",{"cal_state,1":"Noise"})
     Annotation("CALSTATE","CALON")
-    Track(calSrc,None,oreo['OnOffDuration'], '1',fixedOffset=Offset('J2000', oreo['OnOffDelRA'], oreo['OnOffDelDec'], cosv=True))
+    Track(calSrc,None,orbits['OnOffDuration'], '1',fixedOffset=Offset('J2000', orbits['OnOffDelRA'], orbits['OnOffDelDec'], cosv=True))
     SetValues("ScanCoordinator",{"cal_state,1":"NoNoise"})
     Annotation("CALSTATE","CALOFF")
 
 #--------------------------
 # Pulsar
 #          
-if oreo['doPulsar'] == "1":
+if orbits['doPulsar'] == "1":
 
-    psrSrc = popen(["/home/groups/btl/OREO/CurrentVersion/whichSources.tclsh", "numSrcs 0 avoidCurrent 0", "catalog", oreo['pulsarCat'], str(oreo)])
+    psrSrc = popen(["/home/groups/btl/ORBITS/CurrentVersion/whichSources.tclsh", "numSrcs 0 avoidCurrent 0", "catalog", orbits['pulsarCat'], str(orbits)])
     print "Selected pulsar:", psrSrc
 
     checkLastPointingTsys(psrSrc)
 
     print "Observing Pulsar", psrSrc
     PubBLHead("Observing Pulsar: "+psrSrc)
-    Track(psrSrc,None,oreo['pulsarDuration'])
+    Track(psrSrc,None,orbits['pulsarDuration'])
 
     #Canary run.
     PubBLHead("Running canary check")
@@ -84,7 +84,7 @@ if oreo['doPulsar'] == "1":
 while time.time() < stopTime:
 
     # Find a primary source
-    rslts = popen(["/home/groups/btl/OREO/CurrentVersion/whichSources.tclsh", "numSrcs 1 avoidCurrent 0", "catalog", oreo['primaryCat'], str(oreo)])
+    rslts = popen(["/home/groups/btl/ORBITS/CurrentVersion/whichSources.tclsh", "numSrcs 1 avoidCurrent 0", "catalog", orbits['primaryCat'], str(orbits)])
     (primeSrcName,mt,primeSrcRa,primeSrcDec)=rslts.split()
 
     print "Selected primary and slewing to:", primeSrcName, primeSrcRa, primeSrcDec
@@ -94,7 +94,7 @@ while time.time() < stopTime:
 
     # Find three secondary sources
     Slew(primeLoc)
-    rslts = popen(["/home/groups/btl/OREO/CurrentVersion/whichSources.tclsh", "numSrcs 3 avoidCurrent 1", "catalog", oreo['secondaryCat'], str(oreo)])
+    rslts = popen(["/home/groups/btl/ORBITS/CurrentVersion/whichSources.tclsh", "numSrcs 3 avoidCurrent 1", "catalog", orbits['secondaryCat'], str(orbits)])
     secondarySrcs={}
     parseSecondaries(rslts)
 
@@ -105,17 +105,17 @@ while time.time() < stopTime:
     # OK... do the observing (finally)
     for j in range(0,3):
         print "Primary",j+1,
-        obsSource(primeSrcName,                    primeSrcRa,                    primeSrcDec,              oreo['obsDuration'])
+        obsSource(primeSrcName,                    primeSrcRa,                    primeSrcDec,              orbits['obsDuration'])
         print "Secondary",j+1,
-        obsSource(secondarySrcs["srcName"+str(j)], secondarySrcs["srcRA"+str(j)], secondarySrcs["srcDec"+str(j)], oreo['obsDuration'])
+        obsSource(secondarySrcs["srcName"+str(j)], secondarySrcs["srcRA"+str(j)], secondarySrcs["srcDec"+str(j)], orbits['obsDuration'])
 
-    if oreo['online']:
+    if orbits['online']:
         print "Updating catalogs"
-        p = popen(["/home/groups/btl/OREO/CurrentVersion/updateCatalog.tclsh", primeSrcName, oreo['primaryCat'], oreo['rcvr']])
+        p = popen(["/home/groups/btl/ORBITS/CurrentVersion/updateCatalog.tclsh", primeSrcName, orbits['primaryCat'], orbits['rcvr']])
         # for j in range(0,3):
-        #    p = popen(["/home/groups/btl/OREO/CurrentVersion/updateCatalog.tclsh", secondarySrcs["srcName"+str(j)], oreo['secondaryCat'], oreo['rcvr']])
+        #    p = popen(["/home/groups/btl/ORBITS/CurrentVersion/updateCatalog.tclsh", secondarySrcs["srcName"+str(j)], orbits['secondaryCat'], orbits['rcvr']])
 
-    if not oreo['online']:
+    if not orbits['online']:
         # If we are not online, then exit the while loop
         stopTime = 0
 

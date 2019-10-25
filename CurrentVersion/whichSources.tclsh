@@ -9,7 +9,7 @@ exec tclsh "$0" "$@"
 
 set env(CLEODIR) /users/mlebofsk/Tcl
 lappend auto_path /users/mlebofsk/Tcl/library
-cd /home/groups/btl/OREO/CurrentVersion
+cd /home/groups/btl/ORBITS/CurrentVersion
 
 #array set milk [list \
 #        telPos "(405:00:00, 45:00:00)" \

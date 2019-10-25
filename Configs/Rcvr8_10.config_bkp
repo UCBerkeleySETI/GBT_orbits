@@ -2,8 +2,8 @@
 # This is the standard X-band config until futher notice.
 # Three bank observing with 24 nodes. Center Frequency is 9375 MHz
 
-execfile('/home/groups/btl/GBT_oreo/CurrentVersion/btlmgr_utils.py')
-global oreo
+execfile('/home/groups/btl/GBT_orbits/CurrentVersion/btlmgr_utils.py')
+global orbits
 
 rcvr = GetValue("LO1","receiver")
 
@@ -62,7 +62,7 @@ nchan = 1024
 Configure(config_g)
 
 # Do Balance()?
-if 'doBalance' in oreo and oreo['doBalance']:
+if 'doBalance' in orbits and orbits['doBalance']:
     Balance()
 
 # Set BTL mode

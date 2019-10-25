@@ -2,29 +2,29 @@ import os
 import subprocess
 import time
 
-# Default OREO Values
-oreo={}
-oreo['OnOffDuration']=120      # Length of calibration observations in sec
-oreo['OnOffDelRA']=0.0            # Delta RA and Dec, in degrees for calibration OnOff observations
-oreo['OnOffDelDec']=1.0
-oreo['pulsarDuration']=300      # length of pulsar observations in sec
-oreo['obsDuration']=300          # length of primary/secondary onbservations in sec
-oreo['setTimeLimit']=4.*oreo['obsDuration']/3600.     # Approximate length of a full sequence of observations in hours
-oreo['maxMoveTime']=1e10   # when searching for sources, only use those whose move times are below this limit
-oreo['numBreakSources']=10000   # when searching a large catalog, the number of objects that are above the
+# Default ORBITS Values
+orbits={}
+orbits['OnOffDuration']=120      # Length of calibration observations in sec
+orbits['OnOffDelRA']=0.0            # Delta RA and Dec, in degrees for calibration OnOff observations
+orbits['OnOffDelDec']=1.0
+orbits['pulsarDuration']=300      # length of pulsar observations in sec
+orbits['obsDuration']=300          # length of primary/secondary onbservations in sec
+orbits['setTimeLimit']=4.*orbits['obsDuration']/3600.     # Approximate length of a full sequence of observations in hours
+orbits['maxMoveTime']=1e10   # when searching for sources, only use those whose move times are below this limit
+orbits['numBreakSources']=10000   # when searching a large catalog, the number of objects that are above the
                                   #horizon within the specified move time that are to be considered.  10000 seems a good value.
-oreo['solarAvoid']=10                  # solar avoidance radius in deg
-oreo['lunarAvoid']=2                     # lunar avoidance radius in deg
-oreo['primaryAvoidFWHM']=5     # radius that secondary sources must lie away from a primary source, in deg.
-oreo['tsysLogFile'] = "../logfile.txt"    # Log file for Tsys measurements
+orbits['solarAvoid']=10                  # solar avoidance radius in deg
+orbits['lunarAvoid']=2                     # lunar avoidance radius in deg
+orbits['primaryAvoidFWHM']=5     # radius that secondary sources must lie away from a primary source, in deg.
+orbits['tsysLogFile'] = "../logfile.txt"    # Log file for Tsys measurements
 
 #----------------------
-# Fill in Oreo dictionary from what cleo returns
-def parseCLEO2OREO( arr ):
-    global oreo
+# Fill in orbits dictionary from what cleo returns
+def parseCLEO2ORBITS( arr ):
+    global orbits
     aa=arr.split()
     for j in range(0,len(aa),2):
-        oreo[aa[j]]=aa[j+1]
+        orbits[aa[j]]=aa[j+1]
 
 #----------------------
 # Fill in dictionary for secondary sources from what cleo returns
@@ -49,48 +49,48 @@ def obsSource( name, ra, dec, duration ):
 # Wrapper for an AutoPeak(Focus) for a position near that of objName
 def pntFoc( objName, doConfig ):
 
-    global oreo
+    global orbits
 
     Slew(objName)
 
     saveAtten()
 
-    if oreo['doFocus'] == "T":
-        print "AutoPeakFocus near", objName, " with min flux of ", float(oreo["peakMinFlux"])
+    if orbits['doFocus'] == "T":
+        print "AutoPeakFocus near", objName, " with min flux of ", float(orbits["peakMinFlux"])
         AutoPeakFocus()
     else:
-        print "AutoPeak near", objName, " with min flux of ", float(oreo["peakMinFlux"])
-        AutoPeak(flux=float(oreo["peakMinFlux"]))
+        print "AutoPeak near", objName, " with min flux of ", float(orbits["peakMinFlux"])
+        AutoPeak(flux=float(orbits["peakMinFlux"]))
 
     restoreAtten()
 
-    Break("Check Pointing",120)
-
-    if oreo['online']:
+    if orbits['online']:
         print "Updating Tsys logfile"
-        p = subprocess.Popen(["/users/rmaddale/BTL/TestSource/logTsysPointing.tclsh", str(oreo)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        p = subprocess.Popen(["/users/rmaddale/BTL/TestSource/logTsysPointing.tclsh", str(orbits)],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
         (rslts, errP) = p.communicate()
         if errP != "":
             print errP
             Break(errP,600)
 
-    if oreo['online'] and doConfig:
-        print "Reconfiguring using:", oreo['configFile']
-        execfile(oreo['configFile'])
+    Break("Check Pointing",120)
+
+    if orbits['online'] and doConfig:
+        print "Reconfiguring using:", orbits['configFile']
+        execfile(orbits['configFile'])
 
 
 # Wrapper for calling MILK routines and handling results & errors
 def popen( cmnd ):
 
-    global oreo
+    global orbits
 
-    oreo['telPos'] = str(GetCurrentLocation("Encoder")).replace(" ","")
-    oreo['azElPos'] = str(GetCurrentLocation("AzEl")).replace(" ","")
+    orbits['telPos'] = str(GetCurrentLocation("Encoder")).replace(" ","")
+    orbits['azElPos'] = str(GetCurrentLocation("AzEl")).replace(" ","")
 
     cmnd.append('telPos')
-    cmnd.append(oreo['telPos'])
+    cmnd.append(orbits['telPos'])
     cmnd.append('azElPos')
-    cmnd.append(oreo['azElPos'])
+    cmnd.append(orbits['azElPos'])
 
     p = subprocess.Popen( cmnd, stdout=subprocess.PIPE,stderr=subprocess.PIPE)
     (rslts, errP) = p.communicate()
@@ -102,7 +102,7 @@ def popen( cmnd ):
 #----------------------
 # Save all current attenuator values
 def saveAtten():
-    global ifrAtten, crAtten, pfAtten, oreo
+    global ifrAtten, crAtten, pfAtten, orbits
 
     ifrAtten={}
     crAtten={}
@@ -112,10 +112,10 @@ def saveAtten():
         ifrAtten["attenuator," + str(i)]=int(GetValue("IFRack","attenuator," + str(i)))
     for i in range(1,17):
         crAtten["CMAttenuator" + str(i)]=float(GetValue("ConverterRack","CMAttenuator" + str(i)))
-    if oreo["rcvr"] == "RcvrPF_2":
+    if orbits["rcvr"] == "RcvrPF_2":
         pfAtten["IFChannelXAttenuator"]=float(GetValue("RcvrPF_2","IFChannelXAttenuator"))
         pfAtten["IFChannelYAttenuator"]=float(GetValue("RcvrPF_2","IFChannelYAttenuator"))
-    if oreo["rcvr"] == "RcvrPF_1":
+    if orbits["rcvr"] == "RcvrPF_1":
         pfAtten["IFChannelAAttenuator"]=float(GetValue("RcvrPF_1","IFChannelAAttenuator"))
         pfAtten["IFChannelBAttenuator"]=float(GetValue("RcvrPF_1","IFChannelBAttenuator"))
         pfAtten["IFChannelCAttenuator"]=float(GetValue("RcvrPF_1","IFChannelCAttenuator"))
@@ -124,22 +124,22 @@ def saveAtten():
 #----------------------
 # Restore previously saved attenuator values
 def restoreAtten():
-    global ifrAtten, crAtten, pfAtten, oreo
+    global ifrAtten, crAtten, pfAtten, orbits
     SetValues("IFRack", ifrAtten)
     SetValues("ConverterRack", crAtten)
-    if oreo["rcvr"] == "RcvrPF_1":
+    if orbits["rcvr"] == "RcvrPF_1":
         SetValues("Rcvr_PF1", pfAtten)
-    if oreo["rcvr"] == "RcvrPF_2":
+    if orbits["rcvr"] == "RcvrPF_2":
         SetValues("Rcvr_PF2", pfAtten)
 
 #----------------------
 # Hack as a way to determine if we're on or ofline
 if GetLST() is None :
     print "You are working OFFLINE"
-    oreo["online"]=False
+    orbits["online"]=False
 else:
     print "Warning:  You are working ONLINE"
-    oreo["online"]=True
+    orbits["online"]=True
 
 
 # **** The home of the external routines needs to be esatblished
@@ -152,61 +152,61 @@ if errP != "":
     Break("**** Error in determining receiver")
 else:
 
-    parseCLEO2OREO(rslts)
+    parseCLEO2ORBITS(rslts)
 
     # Time for end of session
-    stopTime = float(oreo['sessionDur'])*3600 + time.time()
+    stopTime = float(orbits['sessionDur'])*3600 + time.time()
 
     #-------------------------
-    print "Loading catalogs:", oreo['pulsarCat'], oreo['calibCat']
-    Catalog(oreo['pulsarCat'])
-    Catalog(oreo['calibCat'])
+    print "Loading catalogs:", orbits['pulsarCat'], orbits['calibCat']
+    Catalog(orbits['pulsarCat'])
+    Catalog(orbits['calibCat'])
 
 
 
     #--------------------------
-    if oreo['online'] and oreo['doConfig']:
-        print "Configuring using Exec of ", oreo["configFile"]
-        oreo['doBalance']=True
-        execfile(oreo['configFile'])
-        oreo['doBalance']=False
+    if orbits['online'] and orbits['doConfig'] == "1":
+        print "Configuring using Exec of ", orbits["configFile"]
+        orbits['doBalance']=True
+        execfile(orbits['configFile'])
+        orbits['doBalance']=False
 
     #--------------------------
     # Find name of calibrator with the minimum move time
     #
-    if oreo['doCalib'] == "1":
+    if orbits['doCalib'] == "1":
 
-        calSrc = popen(["/users/rmaddale/BTL/TestSource/whichSources.tclsh", "numSrcs 0 avoidCurrent 0", "catalog", oreo['calibCat'], str(oreo)])
+        calSrc = popen(["/users/rmaddale/BTL/TestSource/whichSources.tclsh", "numSrcs 0 avoidCurrent 0", "catalog", orbits['calibCat'], str(orbits)])
         print "Selected calibrator:", calSrc
 
-        if oreo['doPnt'] == "1":
+        if orbits['doPnt'] == "1":
             pntFoc(calSrc, True)
-            oreo['doPnt']="0"
+            orbits['doPnt']="0"
 
         print "Observing Calibrator", calSrc
-        OnOff(calSrc,Offset('J2000', oreo['OnOffDelRA'], oreo['OnOffDelDec'], cosv=False), oreo['OnOffDuration'], '1')
+        OnOff(calSrc,Offset('J2000', orbits['OnOffDelRA'], orbits['OnOffDelDec'], cosv=False), orbits['OnOffDuration'], '1')
 
     #--------------------------
     # Pulsar
     #
-    if oreo['doPulsar'] == "1":
+    if orbits['doPulsar'] == "1":
 
-        psrSrc = popen(["/users/rmaddale/BTL/TestSource/whichSources.tclsh", "numSrcs 0 avoidCurrent 0", "catalog", oreo['pulsarCat'], str(oreo)])
+        psrSrc = popen(["/users/rmaddale/BTL/TestSource/whichSources.tclsh", "numSrcs 0 avoidCurrent 0", "catalog", orbits['pulsarCat'], str(orbits)])
         print "Selected pulsar:", psrSrc
 
-        if oreo['doPnt'] == "1":
+        if orbits['doPnt'] == "1":
             pntFoc(psrSrc, True)
             doPnt="0"
 
         print "Observing pulsar", psrSrc
-        Track(psrSrc,None,oreo['pulsarDuration'])
+        Track(psrSrc,None,orbits['pulsarDuration'])
 
     # Primary and secondary sources
     #
     while time.time() < stopTime:
 
         # Find a primary source
-        rslts = popen(["/users/rmaddale/BTL/TestSource/whichSources.tclsh", "numSrcs 1 avoidCurrent 0", "catalog", oreo['primaryCat'], str(oreo)])
+        rslts = popen(["/users/rmaddale/BTL/TestSource/whichSources.tclsh", "numSrcs 1 avoidCurrent 0", "catalog", orbits['primaryCat'], str(orbits)])
         (primeSrcName,mt,primeSrcRa,primeSrcDec)=rslts.split()
 
         print "Selected primary and slewing to:", primeSrcName, primeSrcRa, primeSrcDec
@@ -214,17 +214,17 @@ else:
         Slew(primeLoc)
 
         # Do we still need to point?  Or, is anothe rone needed?
-        rslts = popen(["/users/rmaddale/BTL/TestSource/isPointingNeeded.tclsh",str(oreo)])
+        rslts = popen(["/users/rmaddale/BTL/TestSource/isPointingNeeded.tclsh",str(orbits)])
         (needToPoint,pntReason) = rslts.split()
 
-        if oreo['doPnt'] == "1" or needToPoint == "1":
+        if orbits['doPnt'] == "1" or needToPoint == "1":
             print "Must point because too much", pntReason, "has passed since the last pointing"
             pntFoc(primeLoc, True)
             doPnt="0"
 
         # Find three secondary sources
         Slew(primeLoc)
-        rslts = popen(["/users/rmaddale/BTL/TestSource/whichSources.tclsh", "numSrcs 3 avoidCurrent 1", "catalog", oreo['secondaryCat'], str(oreo)])
+        rslts = popen(["/users/rmaddale/BTL/TestSource/whichSources.tclsh", "numSrcs 3 avoidCurrent 1", "catalog", orbits['secondaryCat'], str(orbits)])
         secondarySrcs={}
         parseSecondaries(rslts)
 
@@ -234,16 +234,18 @@ else:
 
         # OK... do the observing (finally)
         for j in range(0,3):
-            obsSource(primeSrcName,                    primeSrcRa,                    primeSrcDec,              oreo['obsDuration'])
-            obsSource(secondarySrcs["srcName"+str(j)], secondarySrcs["srcRA"+str(j)], secondarySrcs["srcDec"+str(j)], oreo['obsDuration'])
+            print("Primary"),
+            obsSource(primeSrcName,                    primeSrcRa,                    primeSrcDec,              orbits['obsDuration'])
+            print("Secondary"),
+            obsSource(secondarySrcs["srcName"+str(j)], secondarySrcs["srcRA"+str(j)], secondarySrcs["srcDec"+str(j)], orbits['obsDuration'])
 
-        if oreo['online']:
+        if orbits['online']:
             print "Updating catalogs"
-            p = popen(["/users/rmaddale/BTL/TestSource/updateCatalog.tclsh", primeSrcName, oreo['primaryCat'], oreo['rcvr']])
-            for j in range(0,3):
-                p = popen(["/users/rmaddale/BTL/TestSource/updateCatalog.tclsh", secondarySrcs["srcName"+str(j)], oreo['secondaryCat'], oreo['rcvr']])
+            p = popen(["/users/rmaddale/BTL/TestSource/updateCatalog.tclsh", primeSrcName, orbits['primaryCat'], orbits['rcvr']])
+            # for j in range(0,3):
+            #    p = popen(["/users/rmaddale/BTL/TestSource/updateCatalog.tclsh", secondarySrcs["srcName"+str(j)], orbits['secondaryCat'], orbits['rcvr']])
 
-        if not oreo['online']:
+        if not orbits['online']:
             # If we are not online, then exit the while loop
             stopTime = 0
 

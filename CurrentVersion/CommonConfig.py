@@ -3,7 +3,7 @@
 # every receiver.  Requires that the calling script has provided values for:
 #   btlMode
 #   config_g
-#   oreo(doBalance)
+#   orbits(doBalance)
 # Defines the following Configure variables that can be used in the calling astrid scripts:
 #   configNoiseOn
 #   configNoiseOff
@@ -32,7 +32,7 @@ ResetConfig()
 Configure(config_g)
 
 # Do Balance()?
-if 'doBalance' in oreo and oreo['doBalance']:
+if 'doBalance' in orbits and orbits['doBalance']:
     Balance()
 
 # Modify VEGAS parameters.  Turn on the BTLManager.  Unselect VEGAS banks

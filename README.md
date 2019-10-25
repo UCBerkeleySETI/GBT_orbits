@@ -1,4 +1,5 @@
-## GBT_oreo
+## GBT_orbits
 
 
-Scripts for the O.R.E.O. (Operator Run ET Observing) program at GBT.  
+Scripts for the O.R.B.I.T.S. (Operator Run Breakthrough Initiatives
+Technosignature Search) program at GBT.  

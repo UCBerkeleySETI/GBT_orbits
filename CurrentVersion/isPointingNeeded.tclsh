@@ -9,7 +9,7 @@ exec tclsh "$0" "$@"
 
 lappend auto_path /users/rmaddale/Tcl/library
 set env(CLEODIR) /users/rmaddale/Tcl
-cd /home/groups/btl/OREO/CurrentVersion
+cd /home/groups/btl/ORBITS/CurrentVersion
 
 #set milk(telPos) "(60:00:00,30:00:00)"
 #set milk(apfLogFile) ../logfile.txt
