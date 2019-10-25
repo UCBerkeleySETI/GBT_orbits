@@ -123,7 +123,7 @@ def measureTsys():
     print "Configuring DCR and executing Tsys measurement"
     PubBLHead("Configuring DCR and executing Tsys measurement")
 
-    saveAtten
+    saveAtten()
     if oreo['online']:
         ResetConfig()
         Configure(DCRConfig)
@@ -132,7 +132,7 @@ def measureTsys():
     SetValues('ScanCoordinator', {'source': 'TSYS_BTL'})
     Track(GetCurrentLocation("AzEl"),None,oreo['tsysDur'],fixedOffset=Offset('J2000', oreo['OnOffDelRA'], oreo['OnOffDelDec'], cosv=True))
 
-    restoreAtten
+    restoreAtten()
 
     if oreo['online']:
         print "Updating Tsys logfile"
