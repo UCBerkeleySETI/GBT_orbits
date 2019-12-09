@@ -114,7 +114,7 @@ def pntFoc( objName ):
         print "Updating pointing logfile"
         p = popen(["/home/groups/btl/ORBITS/CurrentVersion/logTsysPointing.tclsh", 'logfile', orbits['apfLogFile'],str(orbits)])
 
-        Break("Check Pointing",120)
+        Break("Check Pointing",30)
 
 def measureTsys():
 
