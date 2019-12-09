@@ -81,42 +81,43 @@ if orbits['doPulsar'] == "1":
 
 # Primary and secondary sources
 #
-while time.time() < stopTime:
+if orbits['doSource'] == "1":
+    while time.time() < stopTime:
 
-    # Find a primary source
-    rslts = popen(["/home/groups/btl/ORBITS/CurrentVersion/whichSources.tclsh", "numSrcs 1 avoidCurrent 0", "catalog", orbits['primaryCat'], str(orbits)])
-    (primeSrcName,mt,primeSrcRa,primeSrcDec)=rslts.split()
+        # Find a primary source
+        rslts = popen(["/home/groups/btl/ORBITS/CurrentVersion/whichSources.tclsh", "numSrcs 1 avoidCurrent 0", "catalog", orbits['primaryCat'], str(orbits)])
+        (primeSrcName,mt,primeSrcRa,primeSrcDec)=rslts.split()
 
-    print "Selected primary and slewing to:", primeSrcName, primeSrcRa, primeSrcDec
-    primeLoc=Location('J2000', primeSrcRa, primeSrcDec)
+        print "Selected primary and slewing to:", primeSrcName, primeSrcRa, primeSrcDec
+        primeLoc=Location('J2000', primeSrcRa, primeSrcDec)
 
-    checkLastPointingTsys(primeLoc)
+        checkLastPointingTsys(primeLoc)
 
-    # Find three secondary sources
-    Slew(primeLoc)
-    rslts = popen(["/home/groups/btl/ORBITS/CurrentVersion/whichSources.tclsh", "numSrcs 3 avoidCurrent 1", "catalog", orbits['secondaryCat'], str(orbits)])
-    secondarySrcs={}
-    parseSecondaries(rslts)
+        # Find three secondary sources
+        Slew(primeLoc)
+        rslts = popen(["/home/groups/btl/ORBITS/CurrentVersion/whichSources.tclsh", "numSrcs 3 avoidCurrent 1", "catalog", orbits['secondaryCat'], str(orbits)])
+        secondarySrcs={}
+        parseSecondaries(rslts)
 
-    print "Selected secondaries"
-    for j in range(0,3):
-        print "     ", j, secondarySrcs["srcName"+str(j)], secondarySrcs["srcRA"+str(j)], secondarySrcs["srcDec"+str(j)]
+        print "Selected secondaries"
+        for j in range(0,3):
+            print "     ", j, secondarySrcs["srcName"+str(j)], secondarySrcs["srcRA"+str(j)], secondarySrcs["srcDec"+str(j)]
 
-    # OK... do the observing (finally)
-    for j in range(0,3):
-        print "Primary",j+1,
-        obsSource(primeSrcName,                    primeSrcRa,                    primeSrcDec,              orbits['obsDuration'])
-        print "Secondary",j+1,
-        obsSource(secondarySrcs["srcName"+str(j)], secondarySrcs["srcRA"+str(j)], secondarySrcs["srcDec"+str(j)], orbits['obsDuration'])
+        # OK... do the observing (finally)
+        for j in range(0,3):
+            print "Primary",j+1,
+            obsSource(primeSrcName,                    primeSrcRa,                    primeSrcDec,              orbits['obsDuration'])
+            print "Secondary",j+1,
+            obsSource(secondarySrcs["srcName"+str(j)], secondarySrcs["srcRA"+str(j)], secondarySrcs["srcDec"+str(j)], orbits['obsDuration'])
 
-    if orbits['online']:
-        print "Updating catalogs"
-        p = popen(["/home/groups/btl/ORBITS/CurrentVersion/updateCatalog.tclsh", primeSrcName, orbits['primaryCat'], orbits['rcvr']])
-        # for j in range(0,3):
-        #    p = popen(["/home/groups/btl/ORBITS/CurrentVersion/updateCatalog.tclsh", secondarySrcs["srcName"+str(j)], orbits['secondaryCat'], orbits['rcvr']])
+        if orbits['online']:
+            print "Updating catalogs"
+            p = popen(["/home/groups/btl/ORBITS/CurrentVersion/updateCatalog.tclsh", primeSrcName, orbits['primaryCat'], orbits['rcvr']])
+            # for j in range(0,3):
+            #    p = popen(["/home/groups/btl/ORBITS/CurrentVersion/updateCatalog.tclsh", secondarySrcs["srcName"+str(j)], orbits['secondaryCat'], orbits['rcvr']])
 
-    if not orbits['online']:
-        # If we are not online, then exit the while loop
-        stopTime = 0
+        if not orbits['online']:
+            # If we are not online, then exit the while loop
+            stopTime = 0
 
 Break("Session has finished")
