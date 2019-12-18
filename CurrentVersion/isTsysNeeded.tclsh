@@ -7,8 +7,10 @@
 # The next line restarts using wish \
 exec tclsh "$0" "$@"
 
-lappend auto_path /users/rmaddale/Tcl/library
-set env(CLEODIR) /users/rmaddale/Tcl
+if {![info exists env(CLEODIR)]} {
+        set env(CLEODIR) /home/cleoversions/Cleo
+}
+lappend auto_path [file join $env(CLEODIR) library]
 cd /home/groups/btl/ORBITS/CurrentVersion
 
 #set milk(tsysLogFile) ../logfileTsys.txt
