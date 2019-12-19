@@ -6,9 +6,10 @@
 #
 # The next line restarts using wish \
 exec tclsh "$0" "$@"
-
-set env(CLEODIR) /users/rmaddale/Tcl
-lappend auto_path /users/rmaddale/Tcl/library
+if {![info exists env(CLEODIR)]} {
+        set env(CLEODIR) /home/cleoversions/Cleo
+}
+lappend auto_path [file join $env(CLEODIR) library]
 
 if [catch {updateCatalogBTL [lindex $argv 0] [lindex $argv 1] [lindex $argv 2] [clock format [clock seconds] -format {%Y%m%dT%H%M%SZ} -gmt 1]} rslts] {
     puts -nonewline stderr $rslts
