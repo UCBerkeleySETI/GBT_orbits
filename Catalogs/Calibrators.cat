@@ -6,6 +6,3 @@ head=name       ra          dec
 3C196     08:13:36.0518 +48:13:02.262
 3C286     13:31:08.288 +30:30:32.96 
 3C295     14:11:20.648 +52:12:09.14 
-# The flux model for 3C353 doesn't seem to work well at C and X bands
-# (and presumably for anything above S band)
-#3C353     17:20:29.5  -00:58:52
