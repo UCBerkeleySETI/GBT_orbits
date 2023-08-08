@@ -74,9 +74,9 @@ def to_btl_conf(mgr):
 def set_btl_mode_lowlevel(mgr, mode, active_players="BLP[0-7][0-7]", obs_mode="raw"):
     if doing_validate(mgr): return
 
-    mgr.set_value("mode,9", "BTL_MODE")
+    mgr.set_value("mode,25", "BTL_MODE")
     mgr.set_value("btl_mode", mode)
-    mgr.set_value("obs_mode,9", obs_mode)
+    mgr.set_value("obs_mode,25", obs_mode)
     mgr.set_value("active_players", active_players)
     mgr.set_value("scale_p0", 20)
     mgr.set_value("scale_p1", 20)
