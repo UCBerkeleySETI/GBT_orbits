@@ -120,6 +120,9 @@ def get_default_players(btl_mode='CODD_MODE_512_64'):
         #active_players = 'BLP[1,3,5,7][0-7]'
         active_players = 'BLP[4-7][0-7]'
 
+    elif btl_mode == 'CODD_MODE_512_56':
+        active_players = 'BLP[0-6][0-7]'
+
     elif btl_mode == 'CODD_MODE_512_64':
         active_players = 'BLP[0-7][0-7]'
 
