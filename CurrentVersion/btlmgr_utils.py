@@ -21,6 +21,11 @@ def doing_validate(mgr):
 def wait_for_state(mgr, state, timeout=5.0):
     if doing_validate(mgr): return
 
+    if isinstance(mgr, str):
+        # TODO Maybe don't hard-code hostname
+        grail_client = GrailClient('wind', 18000)
+        mgr = grail_client.create_manager(mgr)
+
     s = "NotInService"
     waited = 0.0
 
@@ -29,6 +34,7 @@ def wait_for_state(mgr, state, timeout=5.0):
         s = mgr.get_value('state')
         waited += 0.5
 
+    # TODO Add info about success/failure
     print 'wait_for_state(%s) waited for %.1f seconds' % (state, waited)
 
     if s != state:
