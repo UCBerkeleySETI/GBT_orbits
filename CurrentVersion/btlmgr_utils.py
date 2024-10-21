@@ -92,8 +92,8 @@ def set_btl_mode_lowlevel(mgr, mode, active_players="BLP[0-7][0-7]", obs_mode="r
     mgr.set_value("btl_mode", mode)
     mgr.set_value("obs_mode,25", obs_mode)
     mgr.set_value("active_players", active_players)
-    mgr.set_value("scale_p0", 20)
-    mgr.set_value("scale_p1", 20)
+    mgr.set_value("scale_p0", 32*20)
+    mgr.set_value("scale_p1", 32*20)
     return prepare(mgr)
 
 
