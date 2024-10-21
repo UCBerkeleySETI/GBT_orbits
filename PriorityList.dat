@@ -14,8 +14,8 @@ Rcvr1_2		 1.7	3          1.4	      Rcvr1_2		   Primary1_2	Secondary       MainPu
 Rcvr2_3		 2.5	4          1.4	      Rcvr2_3		   Primary2_3	Secondary       MainPulsars Calibrators      0          12        F      180         0.5           24
 Rcvr4_6		 7.5	2.1        1.4	      Rcvr4_6		   Primary4_6	Secondary       MainPulsars Calibrators      0           8        T       90         0.75          3
 Rcvr8_10	12.0	5	   1.4	      Rcvr8_10		   Primary8_10	Secondary       MainPulsars Calibrators      0           6        T       70         0.75          1
-Rcvr12_18	14.0	1.1	   1.4	      Rcvr12_18		   Primary	Secondary       MainPulsars Calibrators      0           4        T       60         0.75          1
-RcvrArray18_26	27.0	2	   2.0	      RcvrArray18_26	   Primary	Secondary       MainPulsars Calibrators      0           3        T       50         1.0           1
+#Rcvr12_18	14.0	1.1	   1.4	      Rcvr12_18		   Primary	Secondary       MainPulsars Calibrators      0           4        T       60         0.75          1
+#RcvrArray18_26	27.0	2	   2.0	      RcvrArray18_26	   Primary	Secondary       MainPulsars Calibrators      0           3        T       50         1.0           1
 Rcvr26_40	28.0	0	   1.4	      Rcvr26_40		   Primary	Secondary       Pulsars     Calibrators      0           2        T       40         1.0           1
 Rcvr40_52	45.0	0	   1.4	      Rcvr40_52		   Primary	Secondary       Pulsars     Calibrators      4           2        T       30         1.0           1
 Rcvr68_92       80.0    0	   1.4	      Rcvr68_92 	   Primary	Secondary       Pulsars     Calibrators      2           1        T       30         1.0           1
