@@ -38,9 +38,21 @@ if 'doBalance' in orbits and orbits['doBalance']:
 # Modify VEGAS parameters.  Turn on the BTLManager.  Unselect VEGAS banks
 for i in 'ABCDEFGH':
     SetValues("VEGAS", {'subsystemSelect,Bank%sMgr' % i: 0})
+
+## "Old" 8-bank VEGAS setup
+#SetValues("VEGAS", {
+#    'subsystemSelect,BTLManager': 1,
+#    'mode,9': "BTL_MODE",
+#    'btl_mode': btlMode,
+#    'active_players' : playerDict[btlMode], 
+#    'scale_p0': 20,
+#    'scale_p1': 20
+#})
+
+# "New" 24-bank VEGAS setup
 SetValues("VEGAS", {
     'subsystemSelect,BTLManager': 1,
-    'mode,9': "BTL_MODE",
+    'mode,25': "BTL_MODE",
     'btl_mode': btlMode,
     'active_players' : playerDict[btlMode], 
     'scale_p0': 20,
