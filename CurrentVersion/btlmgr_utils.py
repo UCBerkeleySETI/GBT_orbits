@@ -174,6 +174,79 @@ def set_btl_mode(btl_mode=None):
     else:
         to_vegas_conf(mgr)
 
+def turn_on_noise_diode():
+    # Turn on noise diode
+    rcvr = GetValue("LO1","receiver")
+
+    # Translate Rcvr800 -> RcvrPF_1
+    if rcvr == 'Rcvr_800':
+        rcvr = 'RcvrPF_1'
+
+    if rcvr in ["Rcvr12_18","RcvrArray18_26","Rcvr26_40","Rcvr40_52","Rcvr68_92","RcvrArray75_116","Rcvr_MBA1_5"]:
+        #OLD#print "I'm sorry Dave, I'm afraid I can't do that."
+        #OLD#Break("Advanced control of receiver noise diodes is not supported for %s"%rcvr)
+        print "I'm sorry Dave, I'm afraid I have to use Ron's technique for the current receiver."
+        SetValues("ScanCoordinator",{"cal_state,1":"Noise"})
+        #SetValues("ScanCoordinator",{"state":"prepare"})
+    elif rcvr in ["Rcvr8_10"]:
+        SetValues(rcvr, {
+        "lCalDriveSelect":"ctlExt",
+        "rCalDriveSelect":"ctlExt",
+        "lCalSwitch":"swOn",
+        "rCalSwitch":"swOn"
+        })
+
+        SetValues(rcvr, {
+        "state":"prepare"
+        })
+    else:
+        SetValues(rcvr, {
+        "xlExtToMCBCtrlSel":"ctlExt",
+        "yrExtToMCBCtrlSel":"ctlExt",
+        "xlCPUNoiseSwCtrl":"swOn",
+        "yrCPUNoiseSwCtrl":"swOn"
+        })
+
+        SetValues(rcvr, {
+        "state":"prepare"
+        })
+
+def turn_off_noise_diode():
+    # Turn off noise diode
+    rcvr = GetValue("LO1","receiver")
+
+    if rcvr == 'Rcvr_800':
+        rcvr = 'RcvrPF_1'
+
+    if rcvr in ["Rcvr12_18","RcvrArray18_26","Rcvr26_40","Rcvr40_52","Rcvr68_92","RcvrArray75_116","Rcvr_MBA1_5"]:
+        #OLD#print "I'm sorry Dave, I'm afraid I can't do that."
+        #OLD#Break("Advanced control of receiver noise diodes is not supported for %s"%rcvr)
+        print "I'm sorry Dave, I'm afraid I have to use Ron's technique for the current receiver."
+        SetValues("ScanCoordinator",{"cal_state,1":"NoNoise"})
+        #SetValues("ScanCoordinator",{"state":"prepare"})
+    elif rcvr in ["Rcvr8_10"]:
+        SetValues(rcvr, {
+        "lCalDriveSelect":"ctlMcb",
+        "rCalDriveSelect":"ctlMcb",
+        "lCalSwitch":"swOff",
+        "rCalSwitch":"swOff"
+        })
+
+        SetValues(rcvr, {
+        "state":"prepare"
+        })
+    else:
+        SetValues(rcvr, {
+        "xlExtToMCBCtrlSel":"ctlMcb",
+        "yrExtToMCBCtrlSel":"ctlMcb",
+        "xlCPUNoiseSwCtrl":"swOff",
+        "yrCPUNoiseSwCtrl":"swOff"
+        })
+
+        SetValues(rcvr, {
+        "state":"prepare"
+        })
+
 def radec_to_azel(ra, dec, t=Time.now()):
     gbo = EarthLocation(lat=38.4*u.deg, lon=-79.8*u.deg, height=808*u.m)
     gboaltaz = AltAz(obstime=t, location=gbo)
