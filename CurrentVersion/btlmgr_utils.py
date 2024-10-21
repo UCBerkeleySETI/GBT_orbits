@@ -3,6 +3,14 @@ import urllib2
 from gbt.ygor import GrailClient
 from gbt.ygor.GrailClient import Manager
 
+# 2023-08-08 Added astropy rough (no precession etc) radec-to-altaz transform code
+from astropy.coordinates import SkyCoord, EarthLocation, AltAz
+from astropy import units as u
+from astropy.time import Time
+# Ignore "dubious year" (and other?) warnings
+import warnings
+warnings.filterwarnings('ignore', module='astropy._erfa')
+
 BTL_MODE = "BTL_MODE"
 MODE1 = "MODE1"
 
@@ -165,3 +173,10 @@ def set_btl_mode(btl_mode=None):
         
     else:
         to_vegas_conf(mgr)
+
+def radec_to_azel(ra, dec, t=Time.now()):
+    gbo = EarthLocation(lat=38.4*u.deg, lon=-79.8*u.deg, height=808*u.m)
+    gboaltaz = AltAz(obstime=t, location=gbo)
+    source = SkyCoord(ra*u.hr, dec*u.deg)
+    altaz = source.transform_to(gboaltaz)
+    return (altaz.az.deg, altaz.alt.deg)
